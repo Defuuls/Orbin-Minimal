@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -132,7 +133,14 @@ private fun FeedScreen(
                             headlineContent = { Text(item.title.ifBlank { "Thread ${item.threadId}" }) },
                             supportingContent = { Text("${item.provider} /${item.board}/\n${item.excerpt.take(140)}") },
                             leadingContent = item.media?.thumbnailUrl?.let { thumbnail ->
-                                { AsyncImage(model = thumbnail, contentDescription = null, modifier = Modifier.heightIn(max = 72.dp)) }
+                                {
+                                    AsyncImage(
+                                        model = thumbnail,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(112.dp),
+                                        contentScale = ContentScale.Crop,
+                                    )
+                                }
                             },
                             modifier = Modifier.fillMaxWidth().clickable { onThread(item) },
                         )
