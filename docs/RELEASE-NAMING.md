@@ -26,3 +26,11 @@ Orbin Minimal release codenames use a fixed body-organ sequence. Android keeps a
 | 20 | Skin | `organ-v20-skin` | `orbin-minimal-skin.apk` |
 
 The release workflow validates the tag against this table. A mismatched or reused organ fails before signing or publishing. Extend the table and the workflow mapping together before version 21.
+
+## Independent signing identity
+
+Orbin Minimal uses its own Android signing key, separate from the full Orbin application. The public SHA-256 certificate fingerprint for this signing identity is:
+
+`3E:C1:AF:02:DF:66:7C:AF:B4:96:9D:8C:8F:F4:12:CB:AE:D8:8F:37:D3:E8:39:A3:D3:49:67:3A:7E:AF:F9:F8`
+
+The private keystore and passwords must never be committed to this repository. Store them only as the repository Actions secrets `RELEASE_KEYSTORE_BASE64`, `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`, and `RELEASE_KEY_PASSWORD`, and keep an offline backup of the keystore.
