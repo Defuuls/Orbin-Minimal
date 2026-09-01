@@ -58,6 +58,7 @@ private fun VideoViewer(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var muted by remember(media.url) { mutableStateOf(true) }
+    var fullscreen by remember(media.url) { mutableStateOf(false) }
 
     val player = remember(media.url) {
         ExoPlayer.Builder(context).build().apply {
@@ -114,9 +115,13 @@ private fun VideoViewer(
                             }
                         },
                         update = { it.player = player },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 260.dp, max = 720.dp),
+                        modifier = if (fullscreen) {
+                            Modifier.fillMaxSize()
+                        } else {
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 260.dp, max = 720.dp)
+                        },
                     )
                 }
 
@@ -137,10 +142,9 @@ private fun VideoViewer(
                         Text(if (muted) "Unmute" else "Mute")
                     }
 
-                    Text(
-                        text = if (muted) "Playing muted" else "Sound on",
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                    TextButton(onClick = { fullscreen = !fullscreen }) {
+                        Text(if (fullscreen) "Exit fullscreen" else "Fullscreen")
+                    }
 
                     TextButton(onClick = onClose) {
                         Text("Close")
