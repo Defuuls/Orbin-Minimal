@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,6 +45,7 @@ import com.orbin.minimal.core.model.BoardRef
 import com.orbin.minimal.core.model.FeedThread
 import com.orbin.minimal.core.model.MediaRef
 import com.orbin.minimal.core.model.ThreadDetails
+import com.orbin.minimal.media.InternalMediaViewer
 
 @Composable
 fun OrbinMinimalApp() {
@@ -210,17 +210,9 @@ private fun ThreadScreen(
     }
 
     selectedMedia?.let { media ->
-        AlertDialog(
-            onDismissRequest = { selectedMedia = null },
-            confirmButton = { TextButton(onClick = { selectedMedia = null }) { Text("Close") } },
-            text = {
-                AsyncImage(
-                    model = media.url,
-                    contentDescription = "Thread media",
-                    modifier = Modifier.fillMaxWidth(),
-                    contentScale = ContentScale.Fit,
-                )
-            },
+        InternalMediaViewer(
+            media = media,
+            onClose = { selectedMedia = null },
         )
     }
 
