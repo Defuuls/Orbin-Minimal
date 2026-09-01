@@ -8,6 +8,7 @@ import com.orbin.minimal.core.model.ThreadDetails
 import com.orbin.minimal.core.model.ThreadPost
 import com.orbin.minimal.core.network.HttpJsonClient
 import com.orbin.minimal.core.provider.ImageBoardProvider
+import com.orbin.minimal.media.extractExternalLinks
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -74,14 +75,17 @@ class VichanProvider(
         )
     }
 
-    private fun JSONObject.toPost(board: String): ThreadPost =
-        ThreadPost(
+    private fun JSONObject.toPost(board: String): ThreadPost {
+        val rawComment = optString("com")
+        return ThreadPost(
             id = optLong("no"),
             author = optString("name").takeIf(String::isNotBlank),
-            body = plainText(optString("com")),
+            body = plainText(rawComment),
             timestampEpochMillis = optLong("time") * 1_000L,
             media = listOfNotNull(media(board)),
+            links = extractExternalLinks(rawComment),
         )
+    }
 
     private fun JSONObject.media(board: String): MediaRef? {
         val tim = optString("tim")
