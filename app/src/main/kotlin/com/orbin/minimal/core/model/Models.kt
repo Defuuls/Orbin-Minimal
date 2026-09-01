@@ -28,6 +28,7 @@ data class ThreadPost(
     val body: String,
     val timestampEpochMillis: Long,
     val media: List<MediaRef> = emptyList(),
+    val links: List<String> = emptyList(),
 )
 
 data class ThreadDetails(
