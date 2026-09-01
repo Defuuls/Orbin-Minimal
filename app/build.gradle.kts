@@ -5,6 +5,10 @@ plugins {
 
 val minimalVersionCode = providers.gradleProperty("orbin.minimalVersionCode").get().toInt()
 val minimalVersionName = providers.gradleProperty("orbin.minimalVersionName").get()
+val releaseKeystoreFile = System.getenv("ORBIN_KEYSTORE_FILE")
+val releaseKeystorePassword = System.getenv("ORBIN_KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("ORBIN_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("ORBIN_KEY_PASSWORD")
 
 android {
     namespace = "com.orbin.minimal"
@@ -23,6 +27,17 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        if (!releaseKeystoreFile.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(releaseKeystoreFile)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -34,6 +49,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 
@@ -53,6 +69,8 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.navigation:navigation-compose:2.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+    implementation("io.coil-kt.coil3:coil-compose:3.6.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.0")
 
     testImplementation("junit:junit:4.13.2")
     debugImplementation("androidx.compose.ui:ui-tooling")
