@@ -1,0 +1,233 @@
+name: Release Orbin Minimal
+
+# Standalone Orbin Minimal release workflow.
+# Release tags and APK assets use a fixed body-organ naming convention.
+# Example: organ-v1-heart -> orbin-minimal-heart.apk
+on:
+  push:
+    tags:
+      - 'organ-v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to create, e.g. organ-v1-heart'
+        required: true
+        type: string
+      base_ref:
+        description: 'Branch or SHA to tag (defaults to main)'
+        required: false
+        default: main
+        type: string
+      notes_only:
+        description: 'Regenerate notes for an existing release without building or uploading'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, sign & publish Orbin Minimal
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.base_ref || github.ref }}
+
+      - name: Validate organ release name
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$RELEASE_TAG" =~ ^organ-v([0-9]+)-([a-z]+)$ ]]; then
+            echo "::error::Release tag must match organ-v<number>-<organ>, e.g. organ-v1-heart"
+            exit 1
+          fi
+
+          NUMBER="${BASH_REMATCH[1]}"
+          ORGAN="${BASH_REMATCH[2]}"
+
+          case "$NUMBER" in
+            1)  EXPECTED_ORGAN="heart";        ORGAN_TITLE="Heart" ;;
+            2)  EXPECTED_ORGAN="brain";        ORGAN_TITLE="Brain" ;;
+            3)  EXPECTED_ORGAN="lungs";        ORGAN_TITLE="Lungs" ;;
+            4)  EXPECTED_ORGAN="liver";        ORGAN_TITLE="Liver" ;;
+            5)  EXPECTED_ORGAN="kidneys";      ORGAN_TITLE="Kidneys" ;;
+            6)  EXPECTED_ORGAN="stomach";      ORGAN_TITLE="Stomach" ;;
+            7)  EXPECTED_ORGAN="pancreas";     ORGAN_TITLE="Pancreas" ;;
+            8)  EXPECTED_ORGAN="spleen";       ORGAN_TITLE="Spleen" ;;
+            9)  EXPECTED_ORGAN="thyroid";      ORGAN_TITLE="Thyroid" ;;
+            10) EXPECTED_ORGAN="bladder";      ORGAN_TITLE="Bladder" ;;
+            11) EXPECTED_ORGAN="gallbladder";  ORGAN_TITLE="Gallbladder" ;;
+            12) EXPECTED_ORGAN="appendix";      ORGAN_TITLE="Appendix" ;;
+            13) EXPECTED_ORGAN="esophagus";     ORGAN_TITLE="Esophagus" ;;
+            14) EXPECTED_ORGAN="trachea";       ORGAN_TITLE="Trachea" ;;
+            15) EXPECTED_ORGAN="thymus";        ORGAN_TITLE="Thymus" ;;
+            16) EXPECTED_ORGAN="pituitary";     ORGAN_TITLE="Pituitary" ;;
+            17) EXPECTED_ORGAN="hypothalamus";  ORGAN_TITLE="Hypothalamus" ;;
+            18) EXPECTED_ORGAN="intestines";    ORGAN_TITLE="Intestines" ;;
+            19) EXPECTED_ORGAN="colon";         ORGAN_TITLE="Colon" ;;
+            20) EXPECTED_ORGAN="skin";          ORGAN_TITLE="Skin" ;;
+            *)
+              echo "::error::No organ is assigned to version $NUMBER. Extend docs/RELEASE-NAMING.md and this workflow first."
+              exit 1
+              ;;
+          esac
+
+          if [ "$ORGAN" != "$EXPECTED_ORGAN" ]; then
+            echo "::error::Version $NUMBER must use organ '$EXPECTED_ORGAN', not '$ORGAN'."
+            exit 1
+          fi
+
+          echo "VERSION_CODE=$NUMBER" >> "$GITHUB_ENV"
+          echo "ORGAN=$ORGAN" >> "$GITHUB_ENV"
+          echo "ORGAN_TITLE=$ORGAN_TITLE" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=${NUMBER}-${ORGAN_TITLE}" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=Orbin Minimal ${NUMBER} - ${ORGAN_TITLE}" >> "$GITHUB_ENV"
+          echo "APK_NAME=orbin-minimal-${ORGAN}.apk" >> "$GITHUB_ENV"
+          echo "MAPPING_NAME=orbin-minimal-${ORGAN}-mapping.txt" >> "$GITHUB_ENV"
+
+      - name: Create and push annotated tag (dispatch only)
+        if: github.event_name == 'workflow_dispatch' && !inputs.notes_only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --tags origin "$RELEASE_TAG" | grep -q "$RELEASE_TAG"; then
+            echo "Tag $RELEASE_TAG already exists on remote; skipping creation."
+          else
+            git tag -a "$RELEASE_TAG" -m "$RELEASE_NAME"
+            git push origin "$RELEASE_TAG"
+          fi
+
+      - name: Set up JDK 17
+        if: ${{ !inputs.notes_only }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 9.7.1
+        if: ${{ !inputs.notes_only }}
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.7.1'
+
+      - name: Decode signing keystore
+        if: ${{ !inputs.notes_only }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::RELEASE_KEYSTORE_BASE64 secret is not set"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/orbin-minimal-release.jks"
+          echo "ORBIN_KEYSTORE_FILE=$RUNNER_TEMP/orbin-minimal-release.jks" >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        if: ${{ !inputs.notes_only }}
+        env:
+          ORBIN_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          ORBIN_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          ORBIN_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle :app:assembleRelease \
+            -Porbin.minimalVersionCode="$VERSION_CODE" \
+            -Porbin.minimalVersionName="$VERSION_NAME" \
+            --stacktrace
+
+      - name: Locate artifacts and compute checksums
+        if: ${{ !inputs.notes_only }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-staging
+
+          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -n1)
+          if [ -z "$APK" ]; then
+            echo "::error::No APK found under app/build/outputs/apk/release"
+            exit 1
+          fi
+
+          MAPPING=$(find app/build/outputs/mapping/release -name 'mapping.txt' | head -n1 || true)
+
+          cp "$APK" "release-staging/$APK_NAME"
+          ( cd release-staging && sha256sum "$APK_NAME" > "$APK_NAME.sha256" )
+
+          if [ -n "$MAPPING" ]; then
+            cp "$MAPPING" "release-staging/$MAPPING_NAME"
+            ( cd release-staging && sha256sum "$MAPPING_NAME" > "$MAPPING_NAME.sha256" )
+          fi
+
+      - name: Generate release notes
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git fetch --tags --force origin
+          PREV_TAG=$(git tag --list 'organ-v*' --sort=-version:refname | grep -v "^${RELEASE_TAG}$" | head -n1 || true)
+
+          echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+          {
+            echo "## $RELEASE_NAME"
+            echo
+            echo "Standalone Orbin Minimal release."
+            echo
+            echo "**Codename:** $ORGAN_TITLE"
+            echo "**Android version:** $VERSION_NAME (code $VERSION_CODE)"
+            echo "**APK:** \`$APK_NAME\`"
+            echo
+            echo "Orbin Minimal keeps one focused interface: followed boards merged into a latest-activity feed, thread reading, and media viewing."
+            echo
+            if [ -n "$PREV_TAG" ]; then
+              echo "### Changes since $PREV_TAG"
+              git log --no-merges --pretty='- %s (%h)' "$PREV_TAG..HEAD" -- app docs .github/workflows/release.yml
+            else
+              echo "### First organ-series release"
+            fi
+            echo
+            echo "### Verify the APK"
+            echo '```bash'
+            echo "sha256sum -c $APK_NAME.sha256"
+            echo '```'
+          } > release-notes.md
+
+      - name: Update notes of existing release
+        if: ${{ inputs.notes_only }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! RELEASE=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" 2>/dev/null); then
+            echo "::error::No published release found for '$RELEASE_TAG'"
+            exit 1
+          fi
+          ID=$(echo "$RELEASE" | jq -r '.id')
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${ID}" -F body=@release-notes.md >/dev/null
+
+      - name: Publish GitHub Release
+        if: ${{ !inputs.notes_only }}
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ steps.notes.outputs.release_name }}
+          body_path: release-notes.md
+          files: |
+            release-staging/*.apk
+            release-staging/*.sha256
+            release-staging/*-mapping.txt
+          fail_on_unmatched_files: false
