@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -209,6 +210,7 @@ private fun ThreadScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var thread by remember { mutableStateOf<ThreadDetails?>(null) }
     var selectedMedia by remember { mutableStateOf<MediaRef?>(null) }
+    val uriHandler = LocalUriHandler.current
 
     LaunchedEffect(provider, board, threadId) {
         runCatching { repository.load(provider, board, threadId) }
@@ -237,6 +239,15 @@ private fun ThreadScreen(
                         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
                             Text("${post.author ?: "Anonymous"} · #${post.id}")
                             if (post.body.isNotBlank()) Text(post.body, modifier = Modifier.padding(top = 4.dp))
+                            post.links.forEach { url ->
+                                TextButton(
+                                    onClick = { uriHandler.openUri(url) },
+                                    modifier = Modifier.padding(top = 4.dp),
+                                ) {
+                                    Text("Open external video link")
+                                }
+                                Text(url.take(100))
+                            }
                             post.media.forEach { media ->
                                 AsyncImage(
                                     model = media.thumbnailUrl ?: media.url,
