@@ -8,6 +8,7 @@ import com.orbin.minimal.core.model.ThreadDetails
 import com.orbin.minimal.core.model.ThreadPost
 import com.orbin.minimal.core.network.HttpJsonClient
 import com.orbin.minimal.core.provider.ImageBoardProvider
+import com.orbin.minimal.media.extractExternalLinks
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
@@ -78,6 +79,7 @@ class LynxChanProvider(
     }
 
     private fun JSONObject.toPost(): ThreadPost {
+        val rawBody = optString("markdown")
         val files = optJSONArray("files") ?: JSONArray()
         val media = buildList {
             for (index in 0 until files.length()) {
@@ -96,9 +98,10 @@ class LynxChanProvider(
         return ThreadPost(
             id = optLong("postId").takeIf { it > 0 } ?: optLong("threadId"),
             author = optString("name").takeIf(String::isNotBlank),
-            body = plainText(optString("markdown")),
+            body = plainText(rawBody),
             timestampEpochMillis = parseInstant(optString("creation")),
             media = media,
+            links = extractExternalLinks(rawBody),
         )
     }
 
