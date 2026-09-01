@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- orbital ring -->
+    <path
+        android:pathData="M23,67 C13,46 24,25 45,18 C63,12 80,18 89,31"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#B86CFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M91,43 C96,63 86,83 66,91 C48,98 31,91 21,78"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#8147D8"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+
+    <!-- orbital sweep / tail -->
+    <path
+        android:pathData="M18,79 C28,83 38,82 47,77 C40,86 30,91 17,89 C24,87 30,84 34,80"
+        android:fillColor="#9A56E8" />
+
+    <!-- eye -->
+    <path
+        android:pathData="M54,34 A22,22 0,1 0,54 78 A22,22 0,1 0,54 34"
+        android:fillColor="#F7F7F8" />
+    <path
+        android:pathData="M58,44 A12,12 0,1 0,58 68 A12,12 0,1 0,58 44"
+        android:fillColor="#111114" />
+    <path
+        android:pathData="M63,47 A5,5 0,1 0,63 57 A5,5 0,1 0,63 47"
+        android:fillColor="#FFFFFF" />
+
+    <!-- orbit node -->
+    <path
+        android:pathData="M88,29 A9,9 0,1 0,88 47 A9,9 0,1 0,88 29"
+        android:fillColor="#A85BEF" />
+</vector>
