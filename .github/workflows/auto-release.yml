@@ -52,6 +52,7 @@ jobs:
         id: plan
         env:
           FORCE: ${{ inputs.force || 'false' }}
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
@@ -73,8 +74,10 @@ jobs:
           LATEST=$(.github/scripts/release-meta.sh latest)
 
           # The codename file's line order defines versionCode, so a published
-          # tag must agree with it. A disagreement means the file and the tags
-          # have diverged; publishing anyway would silently skip a codename.
+          # release must agree with it. A disagreement means the file and the
+          # releases have diverged; publishing anyway would silently skip a
+          # codename. Orphaned tags left by cancelled runs are not releases and
+          # are ignored, so they neither trip this guard nor consume a version.
           if [ "$LATEST" -gt 0 ]; then
             LATEST_TAG=$(.github/scripts/release-meta.sh versions | tail -n1 | cut -d' ' -f2)
             EXPECTED_SLUG=$(.github/scripts/release-meta.sh codename "$LATEST" | cut -d'|' -f1)
