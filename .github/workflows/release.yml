@@ -23,6 +23,22 @@ on:
         required: false
         default: false
         type: boolean
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Release tag to create, e.g. organ-v1-heart'
+        required: true
+        type: string
+      base_ref:
+        description: 'Branch or SHA to tag (defaults to main)'
+        required: false
+        default: main
+        type: string
+      notes_only:
+        description: 'Regenerate notes for an existing release without building or uploading'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -32,13 +48,13 @@ jobs:
     name: Build, sign & publish Orbin Minimal
     runs-on: ubuntu-latest
     env:
-      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.base_ref || github.ref }}
+          ref: ${{ inputs.base_ref || github.ref }}
 
       - name: Validate organ release name
         shell: bash
@@ -53,37 +69,18 @@ jobs:
           NUMBER="${BASH_REMATCH[1]}"
           ORGAN="${BASH_REMATCH[2]}"
 
-          case "$NUMBER" in
-            1)  EXPECTED_ORGAN="heart";        ORGAN_TITLE="Heart" ;;
-            2)  EXPECTED_ORGAN="brain";        ORGAN_TITLE="Brain" ;;
-            3)  EXPECTED_ORGAN="lungs";        ORGAN_TITLE="Lungs" ;;
-            4)  EXPECTED_ORGAN="liver";        ORGAN_TITLE="Liver" ;;
-            5)  EXPECTED_ORGAN="kidneys";      ORGAN_TITLE="Kidneys" ;;
-            6)  EXPECTED_ORGAN="stomach";      ORGAN_TITLE="Stomach" ;;
-            7)  EXPECTED_ORGAN="pancreas";     ORGAN_TITLE="Pancreas" ;;
-            8)  EXPECTED_ORGAN="spleen";       ORGAN_TITLE="Spleen" ;;
-            9)  EXPECTED_ORGAN="thyroid";      ORGAN_TITLE="Thyroid" ;;
-            10) EXPECTED_ORGAN="bladder";      ORGAN_TITLE="Bladder" ;;
-            11) EXPECTED_ORGAN="gallbladder";  ORGAN_TITLE="Gallbladder" ;;
-            12) EXPECTED_ORGAN="appendix";      ORGAN_TITLE="Appendix" ;;
-            13) EXPECTED_ORGAN="esophagus";     ORGAN_TITLE="Esophagus" ;;
-            14) EXPECTED_ORGAN="trachea";       ORGAN_TITLE="Trachea" ;;
-            15) EXPECTED_ORGAN="thymus";        ORGAN_TITLE="Thymus" ;;
-            16) EXPECTED_ORGAN="pituitary";     ORGAN_TITLE="Pituitary" ;;
-            17) EXPECTED_ORGAN="hypothalamus";  ORGAN_TITLE="Hypothalamus" ;;
-            18) EXPECTED_ORGAN="intestines";    ORGAN_TITLE="Intestines" ;;
-            19) EXPECTED_ORGAN="colon";         ORGAN_TITLE="Colon" ;;
-            20) EXPECTED_ORGAN="skin";          ORGAN_TITLE="Skin" ;;
-            *)
-              echo "::error::No organ is assigned to version $NUMBER. Extend docs/RELEASE-NAMING.md and this workflow first."
-              exit 1
-              ;;
-          esac
+          EXPECTED_ORGAN=$(grep -v '^\s*#' .github/release-organs.txt | grep -v '^\s*$' | sed -n "${NUMBER}p")
+          if [ -z "$EXPECTED_ORGAN" ]; then
+            echo "::error::No organ is assigned to version $NUMBER. Extend .github/release-organs.txt and docs/RELEASE-NAMING.md first."
+            exit 1
+          fi
 
           if [ "$ORGAN" != "$EXPECTED_ORGAN" ]; then
             echo "::error::Version $NUMBER must use organ '$EXPECTED_ORGAN', not '$ORGAN'."
             exit 1
           fi
+
+          ORGAN_TITLE="$(echo "${ORGAN:0:1}" | tr '[:lower:]' '[:upper:]')${ORGAN:1}"
 
           echo "VERSION_CODE=$NUMBER" >> "$GITHUB_ENV"
           echo "ORGAN=$ORGAN" >> "$GITHUB_ENV"
@@ -93,8 +90,8 @@ jobs:
           echo "APK_NAME=orbin-minimal-${ORGAN}.apk" >> "$GITHUB_ENV"
           echo "MAPPING_NAME=orbin-minimal-${ORGAN}-mapping.txt" >> "$GITHUB_ENV"
 
-      - name: Create and push annotated tag (dispatch only)
-        if: github.event_name == 'workflow_dispatch' && !inputs.notes_only
+      - name: Create and push annotated tag
+        if: ${{ inputs.tag != '' && !inputs.notes_only }}
         shell: bash
         run: |
           set -euo pipefail
