@@ -1,0 +1,39 @@
+# Orbin Minimal release codenames.
+#
+# Single source of truth shared by the release workflows via
+# .github/scripts/release-meta.sh. The Nth non-comment line is the codename for
+# versionCode N, so position is load-bearing: APPEND ONLY. Never reorder or
+# remove a line — the tag and asset names of published releases depend on it.
+#
+# Format: slug|Display|Named for
+#   slug     lowercase a-z only; used in the tag and in asset filenames
+#   Display  short form used in versionName and the release title
+#   Named for  the subject, credited in the release notes
+#
+# Versions 1-4 shipped under the retired body-organ series and keep their
+# organ-v<n>-<slug> tags. From version 5 the series is famous minimalists,
+# tagged v<n>-<slug>.
+heart|Heart|Heart (retired organ series)
+brain|Brain|Brain (retired organ series)
+lungs|Lungs|Lungs (retired organ series)
+liver|Liver|Liver (retired organ series)
+judd|Judd|Donald Judd
+martin|Martin|Agnes Martin
+flavin|Flavin|Dan Flavin
+lewitt|LeWitt|Sol LeWitt
+andre|Andre|Carl Andre
+stella|Stella|Frank Stella
+morris|Morris|Robert Morris
+truitt|Truitt|Anne Truitt
+serra|Serra|Richard Serra
+kelly|Kelly|Ellsworth Kelly
+glass|Glass|Philip Glass
+reich|Reich|Steve Reich
+riley|Riley|Terry Riley
+young|Young|La Monte Young
+part|Part|Arvo Pärt
+rams|Rams|Dieter Rams
+pawson|Pawson|John Pawson
+ando|Ando|Tadao Ando
+mies|Mies|Ludwig Mies van der Rohe
+ryman|Ryman|Robert Ryman
