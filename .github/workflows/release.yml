@@ -1,16 +1,17 @@
 name: Release Orbin Minimal
 
 # Standalone Orbin Minimal release workflow.
-# Release tags and APK assets use a fixed body-organ naming convention.
-# Example: organ-v1-heart -> orbin-minimal-heart.apk
+# Release tags and APK assets are named from the fixed codename sequence in
+# .github/release-codenames.txt (famous minimalists from version 5 on).
+# Example: v5-judd -> orbin-minimal-judd.apk
 on:
   push:
     tags:
-      - 'organ-v*'
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to create, e.g. organ-v1-heart'
+        description: 'Release tag to create, e.g. v5-judd'
         required: true
         type: string
       base_ref:
@@ -26,7 +27,7 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: 'Release tag to create, e.g. organ-v1-heart'
+        description: 'Release tag to create, e.g. v5-judd'
         required: true
         type: string
       base_ref:
@@ -56,39 +57,38 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.base_ref || github.ref }}
 
-      - name: Validate organ release name
+      - name: Validate release codename
         shell: bash
         run: |
           set -euo pipefail
 
-          if [[ ! "$RELEASE_TAG" =~ ^organ-v([0-9]+)-([a-z]+)$ ]]; then
-            echo "::error::Release tag must match organ-v<number>-<organ>, e.g. organ-v1-heart"
+          if [[ ! "$RELEASE_TAG" =~ ^v([0-9]+)-([a-z]+)$ ]]; then
+            echo "::error::Release tag must match v<number>-<codename>, e.g. v5-judd"
             exit 1
           fi
 
           NUMBER="${BASH_REMATCH[1]}"
-          ORGAN="${BASH_REMATCH[2]}"
+          SLUG="${BASH_REMATCH[2]}"
 
-          EXPECTED_ORGAN=$(grep -v '^\s*#' .github/release-organs.txt | grep -v '^\s*$' | sed -n "${NUMBER}p")
-          if [ -z "$EXPECTED_ORGAN" ]; then
-            echo "::error::No organ is assigned to version $NUMBER. Extend .github/release-organs.txt and docs/RELEASE-NAMING.md first."
+          if ! ENTRY=$(.github/scripts/release-meta.sh codename "$NUMBER"); then
+            echo "::error::No codename is assigned to version $NUMBER. Extend .github/release-codenames.txt and docs/RELEASE-NAMING.md first."
             exit 1
           fi
 
-          if [ "$ORGAN" != "$EXPECTED_ORGAN" ]; then
-            echo "::error::Version $NUMBER must use organ '$EXPECTED_ORGAN', not '$ORGAN'."
+          IFS='|' read -r EXPECTED_SLUG DISPLAY NAMED_FOR <<<"$ENTRY"
+          if [ "$SLUG" != "$EXPECTED_SLUG" ]; then
+            echo "::error::Version $NUMBER must use codename '$EXPECTED_SLUG', not '$SLUG'."
             exit 1
           fi
-
-          ORGAN_TITLE="$(echo "${ORGAN:0:1}" | tr '[:lower:]' '[:upper:]')${ORGAN:1}"
 
           echo "VERSION_CODE=$NUMBER" >> "$GITHUB_ENV"
-          echo "ORGAN=$ORGAN" >> "$GITHUB_ENV"
-          echo "ORGAN_TITLE=$ORGAN_TITLE" >> "$GITHUB_ENV"
-          echo "VERSION_NAME=${NUMBER}-${ORGAN_TITLE}" >> "$GITHUB_ENV"
-          echo "RELEASE_NAME=Orbin Minimal ${NUMBER} - ${ORGAN_TITLE}" >> "$GITHUB_ENV"
-          echo "APK_NAME=orbin-minimal-${ORGAN}.apk" >> "$GITHUB_ENV"
-          echo "MAPPING_NAME=orbin-minimal-${ORGAN}-mapping.txt" >> "$GITHUB_ENV"
+          echo "SLUG=$SLUG" >> "$GITHUB_ENV"
+          echo "DISPLAY=$DISPLAY" >> "$GITHUB_ENV"
+          echo "NAMED_FOR=$NAMED_FOR" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=${NUMBER}-${DISPLAY}" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=Orbin Minimal ${NUMBER} - ${DISPLAY}" >> "$GITHUB_ENV"
+          echo "APK_NAME=orbin-minimal-${SLUG}.apk" >> "$GITHUB_ENV"
+          echo "MAPPING_NAME=orbin-minimal-${SLUG}-mapping.txt" >> "$GITHUB_ENV"
 
       - name: Create and push annotated tag
         if: ${{ inputs.tag != '' && !inputs.notes_only }}
@@ -175,7 +175,7 @@ jobs:
           set -euo pipefail
 
           git fetch --tags --force origin
-          PREV_TAG=$(git tag --list 'organ-v*' --sort=-version:refname | grep -v "^${RELEASE_TAG}$" | head -n1 || true)
+          PREV_TAG=$(.github/scripts/release-meta.sh previous "$VERSION_CODE")
 
           echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
           {
@@ -183,7 +183,7 @@ jobs:
             echo
             echo "Standalone Orbin Minimal release."
             echo
-            echo "**Codename:** $ORGAN_TITLE"
+            echo "**Codename:** $DISPLAY ($NAMED_FOR)"
             echo "**Android version:** $VERSION_NAME (code $VERSION_CODE)"
             echo "**APK:** \`$APK_NAME\`"
             echo
@@ -191,9 +191,9 @@ jobs:
             echo
             if [ -n "$PREV_TAG" ]; then
               echo "### Changes since $PREV_TAG"
-              git log --no-merges --pretty='- %s (%h)' "$PREV_TAG..HEAD" -- app docs .github/workflows/release.yml
+              git log --no-merges --pretty='- %s (%h)' "$PREV_TAG..HEAD" -- app docs .github
             else
-              echo "### First organ-series release"
+              echo "### First release"
             fi
             echo
             echo "### Verify the APK"

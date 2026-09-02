@@ -3,7 +3,7 @@ name: Auto release
 # Automatic release pipeline for Orbin Minimal.
 #
 # Every push to main that changes shipped code is verified, assigned the next
-# organ codename from .github/release-organs.txt, then handed to release.yml
+# codename from .github/release-codenames.txt, then handed to release.yml
 # (called directly as a reusable workflow, so no token-triggered tag push is
 # needed) which tags, builds, signs, publishes and attaches the APK.
 #
@@ -19,7 +19,8 @@ on:
       - 'gradle.properties'
       - '.github/workflows/release.yml'
       - '.github/workflows/auto-release.yml'
-      - '.github/release-organs.txt'
+      - '.github/release-codenames.txt'
+      - '.github/scripts/release-meta.sh'
   workflow_dispatch:
     inputs:
       force:
@@ -47,7 +48,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Plan next organ release
+      - name: Plan next release
         id: plan
         env:
           FORCE: ${{ inputs.force || 'false' }}
@@ -64,26 +65,32 @@ jobs:
           fi
 
           git fetch --tags --force origin
-          if git tag --points-at HEAD | grep -q '^organ-v'; then
+          if git tag --points-at HEAD | grep -qE '^(organ-)?v[0-9]+-'; then
             echo "HEAD is already released; nothing to do."
             exit 0
           fi
 
-          LAST=$(git tag --list 'organ-v*' --sort=-version:refname | head -n1 || true)
-          if [ -n "$LAST" ]; then
-            CURRENT=$(sed -E 's/^organ-v([0-9]+)-.*$/\1/' <<<"$LAST")
-          else
-            CURRENT=0
-          fi
-          NEXT=$((CURRENT + 1))
+          LATEST=$(.github/scripts/release-meta.sh latest)
 
-          ORGAN=$(grep -v '^\s*#' .github/release-organs.txt | grep -v '^\s*$' | sed -n "${NEXT}p")
-          if [ -z "$ORGAN" ]; then
-            echo "::error::No organ is assigned to version $NEXT. Extend .github/release-organs.txt and docs/RELEASE-NAMING.md."
+          # The codename file's line order defines versionCode, so a published
+          # tag must agree with it. A disagreement means the file and the tags
+          # have diverged; publishing anyway would silently skip a codename.
+          if [ "$LATEST" -gt 0 ]; then
+            LATEST_TAG=$(.github/scripts/release-meta.sh versions | tail -n1 | cut -d' ' -f2)
+            EXPECTED_SLUG=$(.github/scripts/release-meta.sh codename "$LATEST" | cut -d'|' -f1)
+            if [[ "$LATEST_TAG" != *"-${EXPECTED_SLUG}" ]]; then
+              echo "::error::Tag '$LATEST_TAG' disagrees with .github/release-codenames.txt, which assigns version $LATEST to '$EXPECTED_SLUG'. Resolve the divergence before releasing."
+              exit 1
+            fi
+          fi
+
+          NEXT=$(( LATEST + 1 ))
+          if ! ENTRY=$(.github/scripts/release-meta.sh codename "$NEXT"); then
+            echo "::error::No codename is assigned to version $NEXT. Extend .github/release-codenames.txt and docs/RELEASE-NAMING.md."
             exit 1
           fi
 
-          TAG="organ-v${NEXT}-${ORGAN}"
+          TAG="v${NEXT}-${ENTRY%%|*}"
           echo "Next release: $TAG"
           {
             echo "tag=$TAG"

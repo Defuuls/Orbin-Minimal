@@ -1,44 +1,63 @@
-# Release naming: body organs
+# Release naming
 
-Orbin Minimal release codenames use a fixed body-organ sequence. Android keeps a monotonically increasing numeric `versionCode`; the human-facing `versionName`, Git tag, GitHub release title, APK filename, mapping filename, and checksum filenames use the assigned organ.
+Android keeps a monotonically increasing numeric `versionCode`; the human-facing `versionName`, Git tag, GitHub release title, APK filename, mapping filename, and checksum filenames use the codename assigned to that version.
 
-| Version | Organ | Release tag | APK asset |
+## Current series: minimalists
+
+From version 5 onward, releases are named after famous minimalists and tagged `v<number>-<codename>`.
+
+| Version | Codename | Named for | Release tag | APK asset |
+| ---: | --- | --- | --- | --- |
+| 5 | Judd | Donald Judd | `v5-judd` | `orbin-minimal-judd.apk` |
+| 6 | Martin | Agnes Martin | `v6-martin` | `orbin-minimal-martin.apk` |
+| 7 | Flavin | Dan Flavin | `v7-flavin` | `orbin-minimal-flavin.apk` |
+| 8 | LeWitt | Sol LeWitt | `v8-lewitt` | `orbin-minimal-lewitt.apk` |
+| 9 | Andre | Carl Andre | `v9-andre` | `orbin-minimal-andre.apk` |
+| 10 | Stella | Frank Stella | `v10-stella` | `orbin-minimal-stella.apk` |
+| 11 | Morris | Robert Morris | `v11-morris` | `orbin-minimal-morris.apk` |
+| 12 | Truitt | Anne Truitt | `v12-truitt` | `orbin-minimal-truitt.apk` |
+| 13 | Serra | Richard Serra | `v13-serra` | `orbin-minimal-serra.apk` |
+| 14 | Kelly | Ellsworth Kelly | `v14-kelly` | `orbin-minimal-kelly.apk` |
+| 15 | Glass | Philip Glass | `v15-glass` | `orbin-minimal-glass.apk` |
+| 16 | Reich | Steve Reich | `v16-reich` | `orbin-minimal-reich.apk` |
+| 17 | Riley | Terry Riley | `v17-riley` | `orbin-minimal-riley.apk` |
+| 18 | Young | La Monte Young | `v18-young` | `orbin-minimal-young.apk` |
+| 19 | Part | Arvo Pärt | `v19-part` | `orbin-minimal-part.apk` |
+| 20 | Rams | Dieter Rams | `v20-rams` | `orbin-minimal-rams.apk` |
+| 21 | Pawson | John Pawson | `v21-pawson` | `orbin-minimal-pawson.apk` |
+| 22 | Ando | Tadao Ando | `v22-ando` | `orbin-minimal-ando.apk` |
+| 23 | Mies | Ludwig Mies van der Rohe | `v23-mies` | `orbin-minimal-mies.apk` |
+| 24 | Ryman | Robert Ryman | `v24-ryman` | `orbin-minimal-ryman.apk` |
+
+## Retired series: body organs
+
+Versions 1-4 shipped under an earlier body-organ series and keep their published `organ-v<number>-<codename>` tags. They are listed here, and hold their positions in the codename file, because position determines `versionCode` — the entries must never be removed or reordered.
+
+| Version | Codename | Release tag | APK asset |
 | ---: | --- | --- | --- |
 | 1 | Heart | `organ-v1-heart` | `orbin-minimal-heart.apk` |
 | 2 | Brain | `organ-v2-brain` | `orbin-minimal-brain.apk` |
 | 3 | Lungs | `organ-v3-lungs` | `orbin-minimal-lungs.apk` |
 | 4 | Liver | `organ-v4-liver` | `orbin-minimal-liver.apk` |
-| 5 | Kidneys | `organ-v5-kidneys` | `orbin-minimal-kidneys.apk` |
-| 6 | Stomach | `organ-v6-stomach` | `orbin-minimal-stomach.apk` |
-| 7 | Pancreas | `organ-v7-pancreas` | `orbin-minimal-pancreas.apk` |
-| 8 | Spleen | `organ-v8-spleen` | `orbin-minimal-spleen.apk` |
-| 9 | Thyroid | `organ-v9-thyroid` | `orbin-minimal-thyroid.apk` |
-| 10 | Bladder | `organ-v10-bladder` | `orbin-minimal-bladder.apk` |
-| 11 | Gallbladder | `organ-v11-gallbladder` | `orbin-minimal-gallbladder.apk` |
-| 12 | Appendix | `organ-v12-appendix` | `orbin-minimal-appendix.apk` |
-| 13 | Esophagus | `organ-v13-esophagus` | `orbin-minimal-esophagus.apk` |
-| 14 | Trachea | `organ-v14-trachea` | `orbin-minimal-trachea.apk` |
-| 15 | Thymus | `organ-v15-thymus` | `orbin-minimal-thymus.apk` |
-| 16 | Pituitary | `organ-v16-pituitary` | `orbin-minimal-pituitary.apk` |
-| 17 | Hypothalamus | `organ-v17-hypothalamus` | `orbin-minimal-hypothalamus.apk` |
-| 18 | Intestines | `organ-v18-intestines` | `orbin-minimal-intestines.apk` |
-| 19 | Colon | `organ-v19-colon` | `orbin-minimal-colon.apk` |
-| 20 | Skin | `organ-v20-skin` | `orbin-minimal-skin.apk` |
 
-The machine-readable source of truth for this sequence is [`.github/release-organs.txt`](../.github/release-organs.txt): the Nth non-comment line is the organ for `versionCode` N. Both release workflows read that file, so the table above and the file must be extended together before version 21.
+## The codename file
+
+The machine-readable source of truth is [`.github/release-codenames.txt`](../.github/release-codenames.txt): the Nth non-comment line is `slug|Display|Named for` for `versionCode` N. Both release workflows read it through [`.github/scripts/release-meta.sh`](../.github/scripts/release-meta.sh), which also resolves the latest released version and the previous tag across both the retired and current tag prefixes.
+
+Append only. Never reorder or remove a line that has already shipped: the tag and asset names of published releases depend on its position. Extend the table above and the file together before version 25.
 
 ## Automatic releases
 
 `.github/workflows/auto-release.yml` releases without manual steps:
 
-1. A push to `main` that touches `app/**`, the Gradle build files, or the release workflows starts the pipeline.
-2. `decide` skips the run if the head commit is already tagged `organ-v*` or its message contains `[skip release]`, otherwise it picks the next unused version and its organ from `.github/release-organs.txt`.
+1. A push to `main` that touches `app/**`, the Gradle build files, or the release tooling starts the pipeline.
+2. `decide` skips the run if the head commit is already tagged for a release or its message contains `[skip release]`, otherwise it takes the highest released version, adds one, and looks up that version's codename.
 3. `verify` runs `:app:testDebugUnitTest`; a failure stops the release before anything is tagged or published.
 4. `release` calls `.github/workflows/release.yml` as a reusable workflow, which creates the annotated tag, builds and signs the APK, computes checksums, generates notes and publishes the GitHub release.
 
 Calling the release workflow directly (rather than pushing a tag and waiting for it to fire) avoids the GitHub rule that a tag pushed with `GITHUB_TOKEN` does not trigger further workflows.
 
-Manual paths remain available: run **Release Orbin Minimal** with an explicit `tag` for an out-of-band release or `notes_only` to regenerate notes, or push an `organ-v*` tag yourself. The workflow validates the tag against the table in every case, and a mismatched or reused organ fails before signing or publishing.
+Manual paths remain available: run **Release Orbin Minimal** with an explicit `tag` for an out-of-band release or `notes_only` to regenerate notes, or push a `v<number>-<codename>` tag yourself. The workflow validates the tag against the codename file in every case, and a mismatched or out-of-sequence codename fails before signing or publishing.
 
 ## Independent signing identity
 
