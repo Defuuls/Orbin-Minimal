@@ -3,9 +3,17 @@
 #
 # Usage:
 #   release-meta.sh codename <version>   Print "slug|Display|Named for" for a version.
-#   release-meta.sh versions             Print "<number> <tag>" for every release tag,
-#                                        ascending. Covers the retired organ-v<n>-<slug>
-#                                        tags and the current v<n>-<slug> ones.
+#   release-meta.sh versions             Print "<number> <tag>" for every released
+#                                        version, ascending. Covers the retired
+#                                        organ-v<n>-<slug> tags and the current
+#                                        v<n>-<slug> ones.
+#
+# A version counts as released only when a GitHub Release exists for its tag.
+# A tag alone is not enough: a cancelled or failed run leaves the tag behind
+# (it is pushed before the build), and that orphan must not consume a version
+# number. When GH_TOKEN and GITHUB_REPOSITORY are set the published releases are
+# fetched and used as the filter; without them (running locally) every matching
+# tag is listed, which is the safe read-only default.
 #   release-meta.sh latest               Print the highest released version number, or 0.
 #   release-meta.sh previous <version>   Print the release tag directly below <version>.
 set -euo pipefail
@@ -23,9 +31,23 @@ codename() {
   printf '%s\n' "$entry"
 }
 
+published_tags() {
+  [ -n "${GH_TOKEN:-}" ] && [ -n "${GITHUB_REPOSITORY:-}" ] && command -v gh >/dev/null 2>&1 || return 0
+  gh api "repos/${GITHUB_REPOSITORY}/releases" --paginate --jq '.[] | select(.draft | not) | .tag_name'
+}
+
 versions() {
+  local published
+  published=$(published_tags)
   git tag --list 'v*' 'organ-v*' |
     sed -nE 's/^(organ-)?v([0-9]+)-[a-z]+$/\2 &/p' |
+    awk -v published="$published" '
+      BEGIN {
+        count = split(published, lines, "\n")
+        for (i = 1; i <= count; i++) if (lines[i] != "") { seen[lines[i]] = 1; filter = 1 }
+      }
+      !filter || ($2 in seen)
+    ' |
     sort -k1,1n
 }
 

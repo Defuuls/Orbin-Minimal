@@ -44,6 +44,8 @@ Versions 1-4 shipped under an earlier body-organ series and keep their published
 
 The machine-readable source of truth is [`.github/release-codenames.txt`](../.github/release-codenames.txt): the Nth non-comment line is `slug|Display|Named for` for `versionCode` N. Both release workflows read it through [`.github/scripts/release-meta.sh`](../.github/scripts/release-meta.sh), which also resolves the latest released version and the previous tag across both the retired and current tag prefixes.
 
+A version counts as released only when a **published GitHub Release** exists for its tag. A tag on its own is not enough: the release workflow pushes the tag before it builds, so a cancelled or failed run leaves an orphaned tag behind. Those orphans are ignored, so a version number is never consumed by a release that never shipped, and re-running after a failure picks up the same version again.
+
 Append only. Never reorder or remove a line that has already shipped: the tag and asset names of published releases depend on its position. Extend the table above and the file together before version 25.
 
 ## Automatic releases
