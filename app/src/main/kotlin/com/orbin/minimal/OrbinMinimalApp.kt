@@ -2,6 +2,7 @@
 
 package com.orbin.minimal
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,6 +48,7 @@ import com.orbin.minimal.core.model.BoardRef
 import com.orbin.minimal.core.model.FeedThread
 import com.orbin.minimal.core.model.ThreadDetails
 import com.orbin.minimal.media.InternalMediaViewer
+import com.orbin.minimal.media.ThreadMediaSync
 
 @Composable
 fun OrbinMinimalApp() {
@@ -205,6 +207,8 @@ private fun ThreadScreen(
     threadId: Long,
     onBack: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val mediaSync = remember(context.applicationContext) { ThreadMediaSync(context.applicationContext) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var thread by remember { mutableStateOf<ThreadDetails?>(null) }
@@ -237,7 +241,25 @@ private fun ThreadScreen(
                 error != null -> Text(error.orEmpty(), modifier = Modifier.padding(16.dp))
                 thread == null -> Text("Thread unavailable", modifier = Modifier.padding(16.dp))
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                    item { Text(thread!!.title, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) }
+                    item {
+                        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                            Text(thread!!.title)
+                            if (threadMedia.isNotEmpty()) {
+                                TextButton(
+                                    onClick = {
+                                        val count = mediaSync.sync(thread!!)
+                                        Toast.makeText(
+                                            context,
+                                            "$count media file${if (count == 1) "" else "s"} queued to Downloads/Orbin Minimal/$board/",
+                                            Toast.LENGTH_LONG,
+                                        ).show()
+                                    },
+                                ) {
+                                    Text("Sync media (${threadMedia.size})")
+                                }
+                            }
+                        }
+                    }
                     items(thread!!.posts, key = { it.id }) { post ->
                         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
                             Text("${post.author ?: "Anonymous"} · #${post.id}")
