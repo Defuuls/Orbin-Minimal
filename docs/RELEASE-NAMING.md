@@ -25,7 +25,20 @@ Orbin Minimal release codenames use a fixed body-organ sequence. Android keeps a
 | 19 | Colon | `organ-v19-colon` | `orbin-minimal-colon.apk` |
 | 20 | Skin | `organ-v20-skin` | `orbin-minimal-skin.apk` |
 
-The release workflow validates the tag against this table. A mismatched or reused organ fails before signing or publishing. Extend the table and the workflow mapping together before version 21.
+The machine-readable source of truth for this sequence is [`.github/release-organs.txt`](../.github/release-organs.txt): the Nth non-comment line is the organ for `versionCode` N. Both release workflows read that file, so the table above and the file must be extended together before version 21.
+
+## Automatic releases
+
+`.github/workflows/auto-release.yml` releases without manual steps:
+
+1. A push to `main` that touches `app/**`, the Gradle build files, or the release workflows starts the pipeline.
+2. `decide` skips the run if the head commit is already tagged `organ-v*` or its message contains `[skip release]`, otherwise it picks the next unused version and its organ from `.github/release-organs.txt`.
+3. `verify` runs `:app:testDebugUnitTest`; a failure stops the release before anything is tagged or published.
+4. `release` calls `.github/workflows/release.yml` as a reusable workflow, which creates the annotated tag, builds and signs the APK, computes checksums, generates notes and publishes the GitHub release.
+
+Calling the release workflow directly (rather than pushing a tag and waiting for it to fire) avoids the GitHub rule that a tag pushed with `GITHUB_TOKEN` does not trigger further workflows.
+
+Manual paths remain available: run **Release Orbin Minimal** with an explicit `tag` for an out-of-band release or `notes_only` to regenerate notes, or push an `organ-v*` tag yourself. The workflow validates the tag against the table in every case, and a mismatched or reused organ fails before signing or publishing.
 
 ## Independent signing identity
 

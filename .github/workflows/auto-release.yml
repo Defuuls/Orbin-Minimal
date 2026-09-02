@@ -1,0 +1,122 @@
+name: Auto release
+
+# Automatic release pipeline for Orbin Minimal.
+#
+# Every push to main that changes shipped code is verified, assigned the next
+# organ codename from .github/release-organs.txt, then handed to release.yml
+# (called directly as a reusable workflow, so no token-triggered tag push is
+# needed) which tags, builds, signs, publishes and attaches the APK.
+#
+# Opt out of a single release by putting [skip release] in the commit message.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/auto-release.yml'
+      - '.github/release-organs.txt'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Release even if the head commit says [skip release]'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  decide:
+    name: Decide next release
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.plan.outputs.should_release }}
+      tag: ${{ steps.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Plan next organ release
+        id: plan
+        env:
+          FORCE: ${{ inputs.force || 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "should_release=false" >> "$GITHUB_OUTPUT"
+
+          SUBJECT=$(git log -1 --pretty=%B)
+          if [ "$FORCE" != "true" ] && grep -qiF '[skip release]' <<<"$SUBJECT"; then
+            echo "Head commit opts out of releasing."
+            exit 0
+          fi
+
+          git fetch --tags --force origin
+          if git tag --points-at HEAD | grep -q '^organ-v'; then
+            echo "HEAD is already released; nothing to do."
+            exit 0
+          fi
+
+          LAST=$(git tag --list 'organ-v*' --sort=-version:refname | head -n1 || true)
+          if [ -n "$LAST" ]; then
+            CURRENT=$(sed -E 's/^organ-v([0-9]+)-.*$/\1/' <<<"$LAST")
+          else
+            CURRENT=0
+          fi
+          NEXT=$((CURRENT + 1))
+
+          ORGAN=$(grep -v '^\s*#' .github/release-organs.txt | grep -v '^\s*$' | sed -n "${NEXT}p")
+          if [ -z "$ORGAN" ]; then
+            echo "::error::No organ is assigned to version $NEXT. Extend .github/release-organs.txt and docs/RELEASE-NAMING.md."
+            exit 1
+          fi
+
+          TAG="organ-v${NEXT}-${ORGAN}"
+          echo "Next release: $TAG"
+          {
+            echo "tag=$TAG"
+            echo "should_release=true"
+          } >> "$GITHUB_OUTPUT"
+          echo "Releasing \`$TAG\` from \`${GITHUB_SHA}\`." >> "$GITHUB_STEP_SUMMARY"
+
+  verify:
+    name: Verify
+    needs: decide
+    if: needs.decide.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.7.1'
+      - name: Run unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+  release:
+    name: Release
+    needs:
+      - decide
+      - verify
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
+    with:
+      tag: ${{ needs.decide.outputs.tag }}
+      base_ref: ${{ github.sha }}
