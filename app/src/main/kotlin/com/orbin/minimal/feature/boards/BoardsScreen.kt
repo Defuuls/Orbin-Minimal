@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.orbin.minimal.feature.boards
 
 import androidx.compose.foundation.layout.Box
