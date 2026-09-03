@@ -4,40 +4,136 @@ import com.orbin.minimal.core.model.BoardRef
 import com.orbin.minimal.core.model.FeedThread
 import com.orbin.minimal.core.model.ThreadDetails
 import com.orbin.minimal.core.provider.ProviderRegistry
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+
+data class ProviderFailure(
+    val provider: String,
+    val operation: String,
+    val message: String,
+)
+
+data class LoadResult<T>(
+    val value: T,
+    val failures: List<ProviderFailure> = emptyList(),
+) {
+    val isPartial: Boolean get() = failures.isNotEmpty() && when (value) {
+        is Collection<*> -> value.isNotEmpty()
+        else -> true
+    }
+
+    val isTotalFailure: Boolean get() = failures.isNotEmpty() && when (value) {
+        is Collection<*> -> value.isEmpty()
+        else -> false
+    }
+
+    fun failureSummary(): String = failures
+        .joinToString(separator = "; ") { "${it.provider}: ${it.operation} failed (${it.message})" }
+}
+
+private data class ProviderResult<T>(
+    val value: T,
+    val failure: ProviderFailure? = null,
+)
 
 class FeedRepository(
     private val providers: ProviderRegistry,
     private val followedBoards: FollowedBoardStore,
+    maxConcurrentRequests: Int = DEFAULT_MAX_CONCURRENT_REQUESTS,
 ) {
+    private val requestGate = Semaphore(maxConcurrentRequests.coerceAtLeast(1))
+
     fun followed(): List<BoardRef> = followedBoards.all()
 
     fun toggle(board: BoardRef): Boolean = followedBoards.toggle(board)
 
-    suspend fun availableBoards(): List<BoardRef> =
-        coroutineScope {
-            providers.all()
-                .map { provider -> async { runCatching { provider.boards() }.getOrDefault(emptyList()) } }
-                .awaitAll()
-                .flatten()
-                .sortedWith(compareBy(BoardRef::provider, BoardRef::board))
-        }
+    /** Compatibility surface for simple callers. Prefer [availableBoardsDetailed] when partial failures matter. */
+    suspend fun availableBoards(): List<BoardRef> = availableBoardsDetailed().orThrowIfTotalFailure()
 
-    suspend fun mergedFeed(sort: FeedSort = FeedSort.DEFAULT): List<FeedThread> =
+    suspend fun availableBoardsDetailed(): LoadResult<List<BoardRef>> =
         coroutineScope {
-            followedBoards.all()
-                .map { board ->
+            val results = providers.all()
+                .map { provider ->
                     async {
-                        runCatching { providers.require(board.provider).catalog(board.board) }
-                            .getOrDefault(emptyList())
+                        requestGate.withPermit {
+                            providerCall(
+                                provider = provider.id,
+                                operation = "load boards",
+                                fallback = emptyList(),
+                            ) { provider.boards() }
+                        }
                     }
                 }
                 .awaitAll()
-                .flatten()
-                .sortedFor(sort)
+
+            LoadResult(
+                value = results.flatMap(ProviderResult<List<BoardRef>>::value)
+                    .sortedWith(compareBy(BoardRef::provider, BoardRef::board)),
+                failures = results.mapNotNull(ProviderResult<List<BoardRef>>::failure),
+            )
         }
+
+    /** Compatibility surface for simple callers. Prefer [mergedFeedDetailed] when partial failures matter. */
+    suspend fun mergedFeed(sort: FeedSort = FeedSort.DEFAULT): List<FeedThread> =
+        mergedFeedDetailed(sort).orThrowIfTotalFailure()
+
+    suspend fun mergedFeedDetailed(sort: FeedSort = FeedSort.DEFAULT): LoadResult<List<FeedThread>> =
+        coroutineScope {
+            val results = followedBoards.all()
+                .map { board ->
+                    async {
+                        requestGate.withPermit {
+                            providerCall(
+                                provider = board.provider,
+                                operation = "load /${board.board}/ catalog",
+                                fallback = emptyList(),
+                            ) {
+                                providers.require(board.provider).catalog(board.board)
+                            }
+                        }
+                    }
+                }
+                .awaitAll()
+
+            LoadResult(
+                value = results.flatMap(ProviderResult<List<FeedThread>>::value).sortedFor(sort),
+                failures = results.mapNotNull(ProviderResult<List<FeedThread>>::failure),
+            )
+        }
+
+    private suspend fun <T> providerCall(
+        provider: String,
+        operation: String,
+        fallback: T,
+        block: suspend () -> T,
+    ): ProviderResult<T> =
+        try {
+            ProviderResult(block())
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            ProviderResult(
+                value = fallback,
+                failure = ProviderFailure(
+                    provider = provider,
+                    operation = operation,
+                    message = error.message ?: error::class.java.simpleName,
+                ),
+            )
+        }
+
+    private fun <T> LoadResult<List<T>>.orThrowIfTotalFailure(): List<T> {
+        if (isTotalFailure) throw IllegalStateException(failureSummary())
+        return value
+    }
+
+    private companion object {
+        const val DEFAULT_MAX_CONCURRENT_REQUESTS = 6
+    }
 }
 
 class ThreadRepository(

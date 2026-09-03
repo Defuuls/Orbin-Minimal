@@ -11,18 +11,20 @@ class ThreadMediaSync(private val context: Context) {
     private val downloadManager: DownloadManager
         get() = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
 
+    /** Returns the number of media items successfully queued with DownloadManager. */
     fun sync(thread: ThreadDetails): Int {
         val media = thread.posts.flatMap { it.media }.distinctBy { it.url }
-        media.forEachIndexed { index, item ->
-            enqueue(
-                media = item,
-                board = thread.board,
-                threadId = thread.threadId,
-                threadTitle = thread.title,
-                fallbackIndex = index + 1,
-            )
-        }
-        return media.size
+        return media.mapIndexed { index, item ->
+            runCatching {
+                enqueue(
+                    media = item,
+                    board = thread.board,
+                    threadId = thread.threadId,
+                    threadTitle = thread.title,
+                    fallbackIndex = index + 1,
+                )
+            }.getOrDefault(SKIPPED_ID)
+        }.count { it != SKIPPED_ID }
     }
 
     fun enqueue(
@@ -46,7 +48,7 @@ class ThreadMediaSync(private val context: Context) {
                 "Orbin Minimal/$relativeDir$fileName",
             )
             .setAllowedOverMetered(true)
-            .setAllowedOverRoaming(true)
+            .setAllowedOverRoaming(false)
 
         return downloadManager.enqueue(request)
     }
