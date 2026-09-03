@@ -15,10 +15,24 @@ Initial package boundaries:
 - `network` — HTTP client and transport DTOs
 - `data` — repositories, cache coordination, followed-board persistence
 - `media` — media URL/type handling and viewer support
-- `feature.feed` — merged followed-board feed
+- `feature.feed` — merged followed-board feed, ordered by `data.FeedSort`
 - `feature.boards` — followed-board management
 - `feature.thread` — thread reader
 - `feature.media` — fullscreen media viewer
+
+## Feed ordering
+
+The merged feed is ordered by `FeedSort`, which defaults to `BOARD`:
+
+- `BOARD` — groups threads by provider and board, newest thread first within
+  each board, so a board's threads stay together and fresh ones surface. Ties
+  on creation time fall back to thread id, so a refresh cannot reshuffle rows.
+- `ACTIVITY` — one flat list, most recently bumped thread first, across boards.
+
+"Newest" is thread creation time (`FeedThread.createdAtEpochMillis`), read from
+the catalogs — Vichan's `time`, LynxChan's `creation` — and falling back to last
+activity when a provider omits it. Sorting is a pure function over the loaded
+list, so switching mode reorders what is on screen without refetching.
 
 ## Selective port policy
 

@@ -63,7 +63,8 @@ class VichanProvider(
 
     private fun JSONObject.toFeedThread(board: String): FeedThread {
         val threadId = optLong("no")
-        val modified = optLong("last_modified").takeIf { it > 0 } ?: optLong("time")
+        val created = optLong("time")
+        val modified = optLong("last_modified").takeIf { it > 0 } ?: created
         return FeedThread(
             provider = id,
             board = board,
@@ -71,6 +72,7 @@ class VichanProvider(
             title = optString("sub").takeIf(String::isNotBlank) ?: plainText(optString("com")).take(100),
             excerpt = plainText(optString("com")),
             lastActivityEpochMillis = modified * 1_000L,
+            createdAtEpochMillis = created.takeIf { it > 0 }?.times(1_000L) ?: (modified * 1_000L),
             media = media(board),
         )
     }
