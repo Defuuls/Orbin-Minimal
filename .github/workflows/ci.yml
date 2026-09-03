@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,7 +23,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.7.1'
-      - name: Build debug APK
-        run: gradle :app:assembleDebug --stacktrace
+      - name: Lint debug build
+        run: gradle :app:lintDebug --stacktrace
       - name: Run unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
+      - name: Build debug APK
+        run: gradle :app:assembleDebug --stacktrace
+      - name: Build release APK
+        run: gradle :app:assembleRelease --stacktrace
