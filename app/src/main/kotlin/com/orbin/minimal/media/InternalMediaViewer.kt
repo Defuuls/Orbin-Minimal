@@ -1,5 +1,3 @@
-@file:OptIn(androidx.media3.common.util.UnstableApi::class)
-
 package com.orbin.minimal.media
 
 import androidx.compose.foundation.background
@@ -45,6 +43,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
@@ -156,6 +155,7 @@ fun InternalMediaViewer(
     }
 }
 
+@UnstableApi
 @Composable
 private fun VideoPage(
     media: MediaRef,
