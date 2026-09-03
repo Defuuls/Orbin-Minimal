@@ -19,6 +19,9 @@ data class FeedThread(
     val title: String,
     val excerpt: String = "",
     val lastActivityEpochMillis: Long,
+    // Thread creation time. Defaults to the last activity so a provider that
+    // cannot supply it still orders sensibly instead of sinking to the bottom.
+    val createdAtEpochMillis: Long = lastActivityEpochMillis,
     val media: MediaRef? = null,
 )
 

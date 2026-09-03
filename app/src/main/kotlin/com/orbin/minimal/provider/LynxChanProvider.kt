@@ -47,6 +47,9 @@ class LynxChanProvider(
                             ?: plainText(item.optString("markdown")).take(100),
                         excerpt = plainText(item.optString("markdown")),
                         lastActivityEpochMillis = parseInstant(item.optString("lastBump")),
+                        createdAtEpochMillis = parseInstant(item.optString("creation"))
+                            .takeIf { it > 0 }
+                            ?: parseInstant(item.optString("lastBump")),
                         media = item.optString("thumb").takeIf(String::isNotBlank)?.let {
                             MediaRef(
                                 url = absolute(it),

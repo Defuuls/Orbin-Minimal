@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -18,7 +19,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +47,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coil3.compose.AsyncImage
 import com.orbin.minimal.core.data.FeedRepository
+import com.orbin.minimal.core.data.FeedSort
+import com.orbin.minimal.core.data.sortedFor
 import com.orbin.minimal.core.data.ThreadRepository
 import com.orbin.minimal.core.model.BoardRef
 import com.orbin.minimal.core.model.FeedThread
@@ -101,6 +107,7 @@ private fun FeedScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var feed by remember { mutableStateOf(emptyList<FeedThread>()) }
+    var sort by remember { mutableStateOf(FeedSort.DEFAULT) }
     val followed = remember(refreshKey) { repository.followed() }
 
     LaunchedEffect(refreshKey) {
@@ -110,6 +117,19 @@ private fun FeedScreen(
             .onSuccess { feed = it }
             .onFailure { error = it.message ?: "Unable to load feed" }
         loading = false
+    }
+
+    // The repository applies the default order; changing mode is a local
+    // reorder of what is already loaded, so it must not trigger a refetch.
+    val ordered = remember(feed, sort) { feed.sortedFor(sort) }
+    // Board sort renders as labelled groups; the grouping is derived once per
+    // reorder rather than tracked while items compose.
+    val groups = remember(ordered, sort) {
+        if (sort == FeedSort.BOARD) {
+            ordered.groupBy { "${it.provider} /${it.board}/" }.toList()
+        } else {
+            emptyList()
+        }
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Orbin Minimal") }) }) { padding ->
@@ -124,33 +144,80 @@ private fun FeedScreen(
                     modifier = Modifier.align(Alignment.CenterEnd),
                 ) { Text("Refresh") }
             }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text("Sort", modifier = Modifier.align(Alignment.CenterVertically))
+                FeedSort.entries.forEach { option ->
+                    FilterChip(
+                        selected = sort == option,
+                        onClick = { sort = option },
+                        label = { Text(option.label) },
+                    )
+                }
+            }
             when {
                 loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 error != null -> Text(error.orEmpty(), modifier = Modifier.padding(16.dp))
                 followed.isEmpty() -> Text("Follow at least one board to build your feed.", modifier = Modifier.padding(16.dp))
                 feed.isEmpty() -> Text("No threads returned from followed boards.", modifier = Modifier.padding(16.dp))
+                sort == FeedSort.BOARD -> LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                    groups.forEach { (label, threads) ->
+                        item(key = "header:$label") { BoardHeader(label) }
+                        items(threads, key = { "${it.provider}:${it.board}:${it.threadId}" }) { item ->
+                            FeedRow(item, showBoard = false, onThread = onThread)
+                        }
+                    }
+                }
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                    items(feed, key = { "${it.provider}:${it.board}:${it.threadId}" }) { item ->
-                        ListItem(
-                            headlineContent = { Text(item.title.ifBlank { "Thread ${item.threadId}" }) },
-                            supportingContent = { Text("${item.provider} /${item.board}/\n${item.excerpt.take(140)}") },
-                            leadingContent = item.media?.thumbnailUrl?.let { thumbnail ->
-                                {
-                                    AsyncImage(
-                                        model = thumbnail,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(112.dp),
-                                        contentScale = ContentScale.Crop,
-                                    )
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().clickable { onThread(item) },
-                        )
+                    items(ordered, key = { "${it.provider}:${it.board}:${it.threadId}" }) { item ->
+                        FeedRow(item, showBoard = true, onThread = onThread)
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun BoardHeader(label: String) {
+    Column {
+        HorizontalDivider()
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+    }
+}
+
+@Composable
+private fun FeedRow(
+    item: FeedThread,
+    showBoard: Boolean,
+    onThread: (FeedThread) -> Unit,
+) {
+    ListItem(
+        headlineContent = { Text(item.title.ifBlank { "Thread ${item.threadId}" }) },
+        supportingContent = {
+            // Under a board header the board line would just repeat the header.
+            val excerpt = item.excerpt.take(140)
+            Text(if (showBoard) "${item.provider} /${item.board}/\n$excerpt" else excerpt)
+        },
+        leadingContent = item.media?.thumbnailUrl?.let { thumbnail ->
+            {
+                AsyncImage(
+                    model = thumbnail,
+                    contentDescription = null,
+                    modifier = Modifier.size(112.dp),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+        },
+        modifier = Modifier.fillMaxWidth().clickable { onThread(item) },
+    )
 }
 
 @Composable

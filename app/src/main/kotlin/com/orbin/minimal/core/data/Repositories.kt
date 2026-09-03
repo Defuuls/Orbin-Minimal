@@ -25,7 +25,7 @@ class FeedRepository(
                 .sortedWith(compareBy(BoardRef::provider, BoardRef::board))
         }
 
-    suspend fun mergedFeed(): List<FeedThread> =
+    suspend fun mergedFeed(sort: FeedSort = FeedSort.DEFAULT): List<FeedThread> =
         coroutineScope {
             followedBoards.all()
                 .map { board ->
@@ -36,7 +36,7 @@ class FeedRepository(
                 }
                 .awaitAll()
                 .flatten()
-                .sortedByDescending(FeedThread::lastActivityEpochMillis)
+                .sortedFor(sort)
         }
 }
 
