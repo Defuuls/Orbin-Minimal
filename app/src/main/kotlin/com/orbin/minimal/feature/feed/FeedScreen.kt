@@ -42,6 +42,14 @@ import com.orbin.minimal.core.data.ProviderFailure
 import com.orbin.minimal.core.data.sortedFor
 import com.orbin.minimal.core.model.FeedThread
 
+private enum class FeedSite(
+    val providerId: String,
+    val label: String,
+) {
+    FOURCHAN("fourchan", "4chan"),
+    BBWCHAN("bbwchan", "BBW Chan"),
+}
+
 @Composable
 fun FeedScreen(
     repository: FeedRepository,
@@ -54,6 +62,7 @@ fun FeedScreen(
     var warnings by remember { mutableStateOf(emptyList<ProviderFailure>()) }
     var feed by remember { mutableStateOf(emptyList<FeedThread>()) }
     var sort by remember { mutableStateOf(FeedSort.DEFAULT) }
+    var selectedSite by remember { mutableStateOf(FeedSite.FOURCHAN) }
     val followed = remember(refreshKey) { repository.followed() }
 
     LaunchedEffect(refreshKey) {
@@ -70,10 +79,19 @@ fun FeedScreen(
         loading = false
     }
 
-    val ordered = remember(feed, sort) { feed.sortedFor(sort) }
+    val selectedFeed = remember(feed, selectedSite) {
+        feed.filter { it.provider == selectedSite.providerId }
+    }
+    val selectedFollowed = remember(followed, selectedSite) {
+        followed.filter { it.provider == selectedSite.providerId }
+    }
+    val selectedWarnings = remember(warnings, selectedSite) {
+        warnings.filter { it.provider == selectedSite.providerId }
+    }
+    val ordered = remember(selectedFeed, sort) { selectedFeed.sortedFor(sort) }
     val groups = remember(ordered, sort) {
         if (sort == FeedSort.BOARD) {
-            ordered.groupBy { "${it.provider} /${it.board}/" }.toList()
+            ordered.groupBy { "/${it.board}/" }.toList()
         } else {
             emptyList()
         }
@@ -84,6 +102,20 @@ fun FeedScreen(
             modifier = Modifier.fillMaxSize().padding(padding),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Site")
+                FeedSite.entries.forEach { site ->
+                    FilterChip(
+                        selected = selectedSite == site,
+                        onClick = { selectedSite = site },
+                        label = { Text(site.label) },
+                    )
+                }
+            }
             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 Button(onClick = onBoards) { Text("Boards") }
                 TextButton(
@@ -104,9 +136,9 @@ fun FeedScreen(
                     )
                 }
             }
-            if (warnings.isNotEmpty() && error == null) {
+            if (selectedWarnings.isNotEmpty() && error == null) {
                 Text(
-                    text = "Some boards could not refresh: " + warnings.joinToString { it.provider },
+                    text = "${selectedSite.label} could not fully refresh.",
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
@@ -114,11 +146,17 @@ fun FeedScreen(
             when {
                 loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 error != null -> Text(error.orEmpty(), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
-                followed.isEmpty() -> Text("Follow at least one board to build your feed.", modifier = Modifier.padding(16.dp))
-                feed.isEmpty() -> Text("No threads returned from followed boards.", modifier = Modifier.padding(16.dp))
+                selectedFollowed.isEmpty() -> Text(
+                    "Follow at least one ${selectedSite.label} board to build this feed.",
+                    modifier = Modifier.padding(16.dp),
+                )
+                selectedFeed.isEmpty() -> Text(
+                    "No threads returned from followed ${selectedSite.label} boards.",
+                    modifier = Modifier.padding(16.dp),
+                )
                 sort == FeedSort.BOARD -> LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
                     groups.forEach { (label, threads) ->
-                        item(key = "header:$label") { BoardHeader(label) }
+                        item(key = "header:${selectedSite.providerId}:$label") { BoardHeader(label) }
                         items(threads, key = { "${it.provider}:${it.board}:${it.threadId}" }) { item ->
                             FeedRow(item, showBoard = false, onThread = onThread)
                         }
@@ -157,7 +195,7 @@ private fun FeedRow(
         headlineContent = { Text(item.title.ifBlank { "Thread ${item.threadId}" }) },
         supportingContent = {
             val excerpt = item.excerpt.take(140)
-            Text(if (showBoard) "${item.provider} /${item.board}/\n$excerpt" else excerpt)
+            Text(if (showBoard) "/${item.board}/\n$excerpt" else excerpt)
         },
         leadingContent = item.media?.thumbnailUrl?.let { thumbnail ->
             {
