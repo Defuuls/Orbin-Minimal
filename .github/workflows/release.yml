@@ -158,15 +158,26 @@ jobs:
             exit 1
           fi
 
-          MAPPING=$(find app/build/outputs/mapping/release -name 'mapping.txt' | head -n1 || true)
-
           cp "$APK" "release-staging/$APK_NAME"
           ( cd release-staging && sha256sum "$APK_NAME" > "$APK_NAME.sha256" )
 
+          # The R8 mapping de-obfuscates the shipped APK, so it is staged well
+          # clear of release-staging: everything in there is published, and a
+          # stray glob must not be able to reach it.
+          mkdir -p mapping-private
+          MAPPING=$(find app/build/outputs/mapping/release -name 'mapping.txt' | head -n1 || true)
           if [ -n "$MAPPING" ]; then
-            cp "$MAPPING" "release-staging/$MAPPING_NAME"
-            ( cd release-staging && sha256sum "$MAPPING_NAME" > "$MAPPING_NAME.sha256" )
+            cp "$MAPPING" "mapping-private/$MAPPING_NAME"
           fi
+
+      - name: Upload mapping as a private build artifact
+        if: ${{ !inputs.notes_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.MAPPING_NAME }}
+          path: mapping-private/
+          retention-days: 90
+          if-no-files-found: warn
 
       - name: Generate release notes
         id: notes
@@ -225,8 +236,9 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           name: ${{ steps.notes.outputs.release_name }}
           body_path: release-notes.md
+          # Only the APK and its checksum. Never the R8 mapping: publishing it
+          # hands anyone the means to de-obfuscate the release build.
           files: |
             release-staging/*.apk
             release-staging/*.sha256
-            release-staging/*-mapping.txt
           fail_on_unmatched_files: false
