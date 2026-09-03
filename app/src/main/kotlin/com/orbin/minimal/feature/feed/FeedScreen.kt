@@ -2,6 +2,7 @@
 
 package com.orbin.minimal.feature.feed
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -102,20 +104,10 @@ fun FeedScreen(
             modifier = Modifier.fillMaxSize().padding(padding),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Site")
-                FeedSite.entries.forEach { site ->
-                    FilterChip(
-                        selected = selectedSite == site,
-                        onClick = { selectedSite = site },
-                        label = { Text(site.label) },
-                    )
-                }
-            }
+            SiteSelector(
+                selectedSite = selectedSite,
+                onSiteSelected = { selectedSite = it },
+            )
             Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 Button(onClick = onBoards) { Text("Boards") }
                 TextButton(
@@ -167,6 +159,36 @@ fun FeedScreen(
                         FeedRow(item, showBoard = true, onThread = onThread)
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SiteSelector(
+    selectedSite: FeedSite,
+    onSiteSelected: (FeedSite) -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text("Select a site", style = MaterialTheme.typography.labelLarge)
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(6.dp))
+                    .padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            FeedSite.entries.forEach { site ->
+                FilterChip(
+                    selected = selectedSite == site,
+                    onClick = { onSiteSelected(site) },
+                    label = { Text(site.label, maxLines = 1) },
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
