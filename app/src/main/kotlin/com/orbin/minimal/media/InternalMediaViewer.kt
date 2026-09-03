@@ -53,6 +53,7 @@ import kotlin.math.abs
 private val ViewerContentColor = Color.White
 private val ViewerMutedColor = Color.LightGray
 
+@UnstableApi
 @Composable
 fun InternalMediaViewer(
     media: List<MediaRef>,
