@@ -32,12 +32,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
 import com.orbin.minimal.core.data.ThreadRepository
 import com.orbin.minimal.core.model.ThreadDetails
 import com.orbin.minimal.media.InternalMediaViewer
 import com.orbin.minimal.media.ThreadMediaSync
 
+@androidx.annotation.OptIn(markerClass = [UnstableApi::class])
 @Composable
 fun ThreadScreen(
     repository: ThreadRepository,
