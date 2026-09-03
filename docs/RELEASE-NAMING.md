@@ -61,6 +61,14 @@ Calling the release workflow directly (rather than pushing a tag and waiting for
 
 Manual paths remain available: run **Release Orbin Minimal** with an explicit `tag` for an out-of-band release or `notes_only` to regenerate notes, or push a `v<number>-<codename>` tag yourself. The workflow validates the tag against the codename file in every case, and a mismatched or out-of-sequence codename fails before signing or publishing.
 
+## Release artifacts
+
+A published release carries the signed APK and its SHA-256 checksum, and nothing else.
+
+The R8 mapping file is deliberately **not** published. It maps obfuscated names back to the originals, so attaching it to the release would hand anyone who downloads the APK the means to de-obfuscate it, undoing what `isMinifyEnabled` buys. The build still produces it and uploads it as a private GitHub Actions artifact (90-day retention), where repository members can fetch it to de-obfuscate a crash trace.
+
+It is staged outside `release-staging/` rather than filtered out of it: every file in that directory is published by glob, so the mapping must never be written there in the first place.
+
 ## Independent signing identity
 
 Orbin Minimal uses its own Android signing key, separate from the full Orbin application. The public SHA-256 certificate fingerprint for this signing identity is:
