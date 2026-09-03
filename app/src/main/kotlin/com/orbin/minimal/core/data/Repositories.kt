@@ -30,6 +30,9 @@ data class LoadResult<T>(
         is Collection<*> -> value.isEmpty()
         else -> false
     }
+
+    fun failureSummary(): String = failures
+        .joinToString(separator = "; ") { "${it.provider}: ${it.operation} failed (${it.message})" }
 }
 
 private data class ProviderResult<T>(
@@ -48,8 +51,8 @@ class FeedRepository(
 
     fun toggle(board: BoardRef): Boolean = followedBoards.toggle(board)
 
-    /** Compatibility surface for simple callers. Prefer [availableBoardsDetailed] when failures matter. */
-    suspend fun availableBoards(): List<BoardRef> = availableBoardsDetailed().value
+    /** Compatibility surface for simple callers. Prefer [availableBoardsDetailed] when partial failures matter. */
+    suspend fun availableBoards(): List<BoardRef> = availableBoardsDetailed().orThrowIfTotalFailure()
 
     suspend fun availableBoardsDetailed(): LoadResult<List<BoardRef>> =
         coroutineScope {
@@ -74,9 +77,9 @@ class FeedRepository(
             )
         }
 
-    /** Compatibility surface for simple callers. Prefer [mergedFeedDetailed] when failures matter. */
+    /** Compatibility surface for simple callers. Prefer [mergedFeedDetailed] when partial failures matter. */
     suspend fun mergedFeed(sort: FeedSort = FeedSort.DEFAULT): List<FeedThread> =
-        mergedFeedDetailed(sort).value
+        mergedFeedDetailed(sort).orThrowIfTotalFailure()
 
     suspend fun mergedFeedDetailed(sort: FeedSort = FeedSort.DEFAULT): LoadResult<List<FeedThread>> =
         coroutineScope {
@@ -122,6 +125,11 @@ class FeedRepository(
                 ),
             )
         }
+
+    private fun <T> LoadResult<List<T>>.orThrowIfTotalFailure(): List<T> {
+        if (isTotalFailure) throw IllegalStateException(failureSummary())
+        return value
+    }
 
     private companion object {
         const val DEFAULT_MAX_CONCURRENT_REQUESTS = 6
