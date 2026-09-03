@@ -1,3 +1,5 @@
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
+
 package com.orbin.minimal.media
 
 import androidx.compose.foundation.background
