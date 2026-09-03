@@ -48,7 +48,10 @@ class FeedRepository(
 
     fun toggle(board: BoardRef): Boolean = followedBoards.toggle(board)
 
-    suspend fun availableBoards(): LoadResult<List<BoardRef>> =
+    /** Compatibility surface for simple callers. Prefer [availableBoardsDetailed] when failures matter. */
+    suspend fun availableBoards(): List<BoardRef> = availableBoardsDetailed().value
+
+    suspend fun availableBoardsDetailed(): LoadResult<List<BoardRef>> =
         coroutineScope {
             val results = providers.all()
                 .map { provider ->
@@ -71,7 +74,11 @@ class FeedRepository(
             )
         }
 
-    suspend fun mergedFeed(sort: FeedSort = FeedSort.DEFAULT): LoadResult<List<FeedThread>> =
+    /** Compatibility surface for simple callers. Prefer [mergedFeedDetailed] when failures matter. */
+    suspend fun mergedFeed(sort: FeedSort = FeedSort.DEFAULT): List<FeedThread> =
+        mergedFeedDetailed(sort).value
+
+    suspend fun mergedFeedDetailed(sort: FeedSort = FeedSort.DEFAULT): LoadResult<List<FeedThread>> =
         coroutineScope {
             val results = followedBoards.all()
                 .map { board ->
