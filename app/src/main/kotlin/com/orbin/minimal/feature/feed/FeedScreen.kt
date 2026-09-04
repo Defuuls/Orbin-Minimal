@@ -32,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +65,7 @@ fun FeedScreen(
     var warnings by remember { mutableStateOf(emptyList<ProviderFailure>()) }
     var feed by remember { mutableStateOf(emptyList<FeedThread>()) }
     var sort by remember { mutableStateOf(FeedSort.DEFAULT) }
-    var selectedSite by remember { mutableStateOf(FeedSite.FOURCHAN) }
+    var selectedSite by rememberSaveable { mutableStateOf(FeedSite.FOURCHAN) }
     val followed = remember(refreshKey) { repository.followed() }
 
     LaunchedEffect(refreshKey) {
