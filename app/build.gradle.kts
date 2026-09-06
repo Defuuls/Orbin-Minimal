@@ -69,6 +69,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    implementation("com.google.android.material:material:1.13.0")
     implementation("androidx.navigation:navigation-compose:2.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
     implementation("io.coil-kt.coil3:coil-compose:3.6.0")
@@ -77,5 +78,7 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.11.0")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20250517")
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.5.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

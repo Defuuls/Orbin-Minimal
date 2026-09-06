@@ -37,10 +37,28 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.util.UnstableApi
 import coil3.compose.AsyncImage
 import com.orbin.minimal.core.data.ThreadRepository
-import com.orbin.minimal.media.ImageLoading
+import com.orbin.minimal.core.model.MediaRef
+import com.orbin.minimal.core.model.ThreadDetails
+import com.orbin.minimal.core.model.ThreadPost
 import com.orbin.minimal.media.InternalMediaViewer
 import com.orbin.minimal.media.ThreadMediaSync
 import com.orbin.minimal.media.isSafeExternalLink
+import com.orbin.minimal.media.rememberThumbnailRequest
+
+private data class PostWithMediaOffset(
+    val post: ThreadPost,
+    val mediaOffset: Int,
+)
+
+private fun flattenThreadMedia(thread: ThreadDetails): Pair<List<MediaRef>, List<PostWithMediaOffset>> {
+    val media = ArrayList<MediaRef>()
+    val posts = ArrayList<PostWithMediaOffset>(thread.posts.size)
+    for (post in thread.posts) {
+        posts.add(PostWithMediaOffset(post, media.size))
+        media.addAll(post.media)
+    }
+    return media to posts
+}
 
 @androidx.annotation.OptIn(markerClass = [UnstableApi::class])
 @Composable
@@ -64,7 +82,12 @@ fun ThreadScreen(
     var selectedMediaIndex by remember { mutableStateOf<Int?>(null) }
     var pendingExternalUrl by remember { mutableStateOf<String?>(null) }
     val uriHandler = LocalUriHandler.current
-    val threadMedia = state.thread?.posts?.flatMap { it.media }.orEmpty()
+
+    val thread = state.thread
+    val (threadMedia, postsWithOffset) = remember(thread) {
+        if (thread == null) emptyList<MediaRef>() to emptyList()
+        else flattenThreadMedia(thread)
+    }
 
     pendingExternalUrl?.let { url ->
         AlertDialog(
@@ -111,11 +134,12 @@ fun ThreadScreen(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(16.dp),
                 )
-                state.thread == null -> Text("Thread unavailable", modifier = Modifier.padding(16.dp))
+                thread == null -> Text("Thread unavailable", modifier = Modifier.padding(16.dp))
                 else -> {
-                    val thread = state.thread!!
-                    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                        item {
+                    LazyColumn(
+                        contentPadding = PaddingValues(bottom = 24.dp),
+                    ) {
+                        item(key = "thread-header", contentType = "thread-header") {
                             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                                 Text(thread.title)
                                 if (threadMedia.isNotEmpty()) {
@@ -134,7 +158,12 @@ fun ThreadScreen(
                                 }
                             }
                         }
-                        items(thread.posts, key = { it.id }) { post ->
+                        items(
+                            items = postsWithOffset,
+                            key = { it.post.id },
+                            contentType = { "post" },
+                        ) { entry ->
+                            val post = entry.post
                             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
                                 Text("${post.author ?: "Anonymous"} · #${post.id}")
                                 if (post.body.isNotBlank()) Text(post.body, modifier = Modifier.padding(top = 4.dp))
@@ -151,13 +180,11 @@ fun ThreadScreen(
                                     }
                                     Text(url.take(100))
                                 }
-                                post.media.forEach { media ->
-                                    val thumbRequest = remember(media.thumbnailUrl, media.url) {
-                                        ImageLoading.thumbnailRequest(
-                                            context,
-                                            media.thumbnailUrl ?: media.url,
-                                        )
-                                    }
+                                post.media.forEachIndexed { localIndex, media ->
+                                    val thumbRequest = rememberThumbnailRequest(
+                                        media.thumbnailUrl ?: media.url,
+                                        cellDp = 360.dp,
+                                    )
                                     if (thumbRequest != null) {
                                         AsyncImage(
                                             model = thumbRequest,
@@ -167,8 +194,7 @@ fun ThreadScreen(
                                                 .heightIn(max = 360.dp)
                                                 .padding(top = 8.dp)
                                                 .clickable {
-                                                    selectedMediaIndex =
-                                                        threadMedia.indexOf(media).takeIf { it >= 0 }
+                                                    selectedMediaIndex = entry.mediaOffset + localIndex
                                                 },
                                             contentScale = ContentScale.Fit,
                                         )

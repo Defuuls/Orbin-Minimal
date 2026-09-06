@@ -35,7 +35,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -50,12 +52,15 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
+import coil3.imageLoader
 import com.orbin.minimal.core.model.MediaRef
 import com.orbin.minimal.core.security.MediaHosts
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 private val ViewerContentColor = Color.White
 private val ViewerMutedColor = Color.LightGray
+private const val GALLERY_MAX_DECODE_DP = 1600
 
 @UnstableApi
 @Composable
@@ -66,11 +71,38 @@ fun InternalMediaViewer(
 ) {
     if (media.isEmpty()) return
 
+    val context = LocalContext.current
     val startIndex = initialIndex.coerceIn(media.indices)
     val pagerState = rememberPagerState(initialPage = startIndex, pageCount = { media.size })
     val scope = rememberCoroutineScope()
     val videoPositions = remember { mutableStateMapOf<String, Long>() }
     var currentImageZoomed by remember { mutableStateOf(false) }
+    val preloader = remember(context.applicationContext) {
+        ImagePreloader(context.applicationContext, context.imageLoader)
+    }
+
+    // Prefetch settled page ±1 into Coil; cancelled when this dialog leaves composition.
+    LaunchedEffect(pagerState.settledPage, media) {
+        val settled = pagerState.settledPage
+        val urls = buildList {
+            for (delta in -1..1) {
+                val index = settled + delta
+                if (index in media.indices) {
+                    val item = media[index]
+                    if (delta == 0) {
+                        add(item.url)
+                    } else {
+                        add(item.thumbnailUrl?.takeIf { it.isNotBlank() } ?: item.url)
+                    }
+                }
+            }
+        }
+        preloader.prefetchBatch(urls, this, maxDimensionPx = ImageLoading.VIEWER_SIZE_PX)
+    }
+
+    LaunchedEffect(pagerState.settledPage) {
+        currentImageZoomed = false
+    }
 
     Dialog(
         onDismissRequest = onClose,
@@ -91,34 +123,42 @@ fun InternalMediaViewer(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize(),
                         userScrollEnabled = !currentImageZoomed,
+                        beyondViewportPageCount = 0,
                     ) { page ->
                         val item = media[page]
+                        val isActive = page == pagerState.settledPage
+                        val isNear = abs(page - pagerState.settledPage) <= 1
+                        // Only heavy-compose near/active pages; off-screen stays empty.
+                        if (!isNear) {
+                            Box(Modifier.fillMaxSize())
+                            return@HorizontalPager
+                        }
                         if (item.isVideo()) {
                             val safeUrl = MediaHosts.filterUrl(item.url)
                             if (safeUrl == null) {
                                 Text("Blocked media host", color = ViewerMutedColor)
-                            } else {
+                            } else if (isActive) {
                                 VideoPage(
                                     media = item.copy(url = safeUrl),
                                     initialPositionMs = videoPositions[safeUrl] ?: 0L,
                                     onPositionChanged = { videoPositions[safeUrl] = it },
                                 )
+                            } else {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("Video", color = ViewerMutedColor)
+                                }
                             }
                         } else {
                             ImagePage(
                                 media = item,
+                                active = isActive,
+                                pageKey = page to pagerState.settledPage,
                                 onZoomChanged = { zoomed ->
-                                    if (page == pagerState.currentPage) {
-                                        currentImageZoomed = zoomed
-                                    }
+                                    if (isActive) currentImageZoomed = zoomed
                                 },
                             )
                         }
                     }
-                }
-
-                LaunchedEffect(pagerState.currentPage) {
-                    currentImageZoomed = false
                 }
 
                 Row(
@@ -328,23 +368,55 @@ private fun VideoPage(
 @Composable
 private fun ImagePage(
     media: MediaRef,
+    active: Boolean,
+    pageKey: Pair<Int, Int>,
     onZoomChanged: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
-    val request = remember(media.url) { ImageLoading.viewerRequest(context, media.url) }
-    var scale by remember(media.url) { mutableFloatStateOf(1f) }
-    var offset by remember(media.url) { mutableStateOf(Offset.Zero) }
+    val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    val decodePx = remember(configuration, density) {
+        val longerDp = maxOf(configuration.screenWidthDp, configuration.screenHeightDp)
+        val longerPx = with(density) { longerDp.dp.roundToPx() }
+        val capPx = with(density) { GALLERY_MAX_DECODE_DP.dp.roundToPx() }
+        longerPx.coerceAtMost(capPx).coerceAtMost(ImageLoading.VIEWER_SIZE_PX).coerceAtLeast(1)
+    }
+    val thumbRequest = rememberThumbnailRequest(media.thumbnailUrl ?: media.url)
+    val request = remember(media.url, decodePx, active) {
+        if (!active) null else ImageLoading.viewerRequest(context, media.url, decodePx)
+    }
+    var scale by remember(media.url, pageKey) { mutableFloatStateOf(1f) }
+    var offset by remember(media.url, pageKey) { mutableStateOf(Offset.Zero) }
     var loading by remember(media.url) { mutableStateOf(true) }
     var loadFailed by remember(media.url) { mutableStateOf(false) }
 
+    LaunchedEffect(pageKey) {
+        scale = 1f
+        offset = Offset.Zero
+        onZoomChanged(false)
+    }
+
     fun updateScale(newScale: Float) {
-        // Lighter zoom: cap at 3x instead of 5x, snap pan when near 1x.
         scale = newScale.coerceIn(1f, 3f)
         if (scale <= 1.05f) {
             scale = 1f
             offset = Offset.Zero
         }
         onZoomChanged(scale > 1.01f)
+    }
+
+    if (!active) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            if (thumbRequest != null) {
+                AsyncImage(
+                    model = thumbRequest,
+                    contentDescription = "Thread media",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                )
+            }
+        }
+        return
     }
 
     if (request == null) {

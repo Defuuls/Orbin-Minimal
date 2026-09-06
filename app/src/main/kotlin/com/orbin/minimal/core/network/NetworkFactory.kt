@@ -17,6 +17,8 @@ object NetworkFactory {
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
             .callTimeout(30, TimeUnit.SECONDS)
+            // Network interceptor so rewritten Cache-Control is what the cache stores.
+            .addNetworkInterceptor(JsonGetCacheInterceptor())
             .build()
     }
 }
