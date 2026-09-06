@@ -1,7 +1,6 @@
 package com.orbin.minimal.media
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
@@ -19,11 +20,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +51,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil3.compose.AsyncImage
 import com.orbin.minimal.core.model.MediaRef
-import kotlin.math.abs
+import com.orbin.minimal.core.security.MediaHosts
+import kotlinx.coroutines.launch
 
 private val ViewerContentColor = Color.White
 private val ViewerMutedColor = Color.LightGray
@@ -62,47 +66,18 @@ fun InternalMediaViewer(
 ) {
     if (media.isEmpty()) return
 
-    var index by remember(media, initialIndex) {
-        mutableStateOf(initialIndex.coerceIn(media.indices))
-    }
-    var dragDistance by remember { mutableFloatStateOf(0f) }
-    var currentImageZoomed by remember(index) { mutableStateOf(false) }
+    val startIndex = initialIndex.coerceIn(media.indices)
+    val pagerState = rememberPagerState(initialPage = startIndex, pageCount = { media.size })
+    val scope = rememberCoroutineScope()
     val videoPositions = remember { mutableStateMapOf<String, Long>() }
-    val current = media[index]
-
-    fun previous() {
-        if (index > 0) index--
-    }
-
-    fun next() {
-        if (index < media.lastIndex) index++
-    }
+    var currentImageZoomed by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(index, media.size, currentImageZoomed) {
-                    detectHorizontalDragGestures(
-                        onDragStart = { dragDistance = 0f },
-                        onHorizontalDrag = { change, dragAmount ->
-                            if (!currentImageZoomed) {
-                                change.consume()
-                                dragDistance += dragAmount
-                            }
-                        },
-                        onDragEnd = {
-                            if (!currentImageZoomed && abs(dragDistance) >= 80f) {
-                                if (dragDistance < 0f) next() else previous()
-                            }
-                            dragDistance = 0f
-                        },
-                        onDragCancel = { dragDistance = 0f },
-                    )
-                },
+            modifier = Modifier.fillMaxSize(),
             color = Color.Black,
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -112,18 +87,38 @@ fun InternalMediaViewer(
                         .weight(1f),
                     contentAlignment = Alignment.Center,
                 ) {
-                    if (current.isVideo()) {
-                        VideoPage(
-                            media = current,
-                            initialPositionMs = videoPositions[current.url] ?: 0L,
-                            onPositionChanged = { videoPositions[current.url] = it },
-                        )
-                    } else {
-                        ImagePage(
-                            media = current,
-                            onZoomChanged = { currentImageZoomed = it },
-                        )
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        userScrollEnabled = !currentImageZoomed,
+                    ) { page ->
+                        val item = media[page]
+                        if (item.isVideo()) {
+                            val safeUrl = MediaHosts.filterUrl(item.url)
+                            if (safeUrl == null) {
+                                Text("Blocked media host", color = ViewerMutedColor)
+                            } else {
+                                VideoPage(
+                                    media = item.copy(url = safeUrl),
+                                    initialPositionMs = videoPositions[safeUrl] ?: 0L,
+                                    onPositionChanged = { videoPositions[safeUrl] = it },
+                                )
+                            }
+                        } else {
+                            ImagePage(
+                                media = item,
+                                onZoomChanged = { zoomed ->
+                                    if (page == pagerState.currentPage) {
+                                        currentImageZoomed = zoomed
+                                    }
+                                },
+                            )
+                        }
                     }
+                }
+
+                LaunchedEffect(pagerState.currentPage) {
+                    currentImageZoomed = false
                 }
 
                 Row(
@@ -134,17 +129,43 @@ fun InternalMediaViewer(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    TextButton(onClick = ::previous, enabled = index > 0) {
-                        Text("Previous", color = if (index > 0) ViewerContentColor else ViewerMutedColor)
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0))
+                            }
+                        },
+                        enabled = pagerState.currentPage > 0,
+                    ) {
+                        Text(
+                            "Previous",
+                            color = if (pagerState.currentPage > 0) ViewerContentColor else ViewerMutedColor,
+                        )
                     }
 
                     Text(
-                        text = "${index + 1} / ${media.size}",
+                        text = "${pagerState.currentPage + 1} / ${media.size}",
                         color = ViewerContentColor,
                     )
 
-                    TextButton(onClick = ::next, enabled = index < media.lastIndex) {
-                        Text("Next", color = if (index < media.lastIndex) ViewerContentColor else ViewerMutedColor)
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                pagerState.animateScrollToPage(
+                                    (pagerState.currentPage + 1).coerceAtMost(media.lastIndex),
+                                )
+                            }
+                        },
+                        enabled = pagerState.currentPage < media.lastIndex,
+                    ) {
+                        Text(
+                            "Next",
+                            color = if (pagerState.currentPage < media.lastIndex) {
+                                ViewerContentColor
+                            } else {
+                                ViewerMutedColor
+                            },
+                        )
                     }
 
                     TextButton(onClick = onClose) {
@@ -287,7 +308,13 @@ private fun VideoPage(
             }
 
             Text(
-                text = if (playbackError != null) "Playback error" else if (muted) "Playing muted" else "Sound on",
+                text = if (playbackError != null) {
+                    "Playback error"
+                } else if (muted) {
+                    "Playing muted"
+                } else {
+                    "Sound on"
+                },
                 color = if (playbackError != null) ViewerMutedColor else ViewerContentColor,
             )
 
@@ -303,15 +330,28 @@ private fun ImagePage(
     media: MediaRef,
     onZoomChanged: (Boolean) -> Unit,
 ) {
+    val context = LocalContext.current
+    val request = remember(media.url) { ImageLoading.viewerRequest(context, media.url) }
     var scale by remember(media.url) { mutableFloatStateOf(1f) }
     var offset by remember(media.url) { mutableStateOf(Offset.Zero) }
     var loading by remember(media.url) { mutableStateOf(true) }
     var loadFailed by remember(media.url) { mutableStateOf(false) }
 
     fun updateScale(newScale: Float) {
-        scale = newScale.coerceIn(1f, 5f)
-        if (scale <= 1f) offset = Offset.Zero
+        // Lighter zoom: cap at 3x instead of 5x, snap pan when near 1x.
+        scale = newScale.coerceIn(1f, 3f)
+        if (scale <= 1.05f) {
+            scale = 1f
+            offset = Offset.Zero
+        }
         onZoomChanged(scale > 1.01f)
+    }
+
+    if (request == null) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Blocked media host", color = ViewerMutedColor)
+        }
+        return
     }
 
     Box(
@@ -319,7 +359,7 @@ private fun ImagePage(
         contentAlignment = Alignment.Center,
     ) {
         AsyncImage(
-            model = media.url,
+            model = request,
             contentDescription = "Thread media",
             onLoading = {
                 loading = true
@@ -342,15 +382,15 @@ private fun ImagePage(
                                 offset = Offset.Zero
                                 updateScale(1f)
                             } else {
-                                updateScale(2.5f)
+                                updateScale(2f)
                             }
                         },
                     )
                 }
                 .pointerInput(media.url, scale) {
                     detectTransformGestures { _, pan, zoom, _ ->
-                        val nextScale = (scale * zoom).coerceIn(1f, 5f)
-                        offset = if (nextScale <= 1f) Offset.Zero else offset + pan
+                        val nextScale = (scale * zoom).coerceIn(1f, 3f)
+                        offset = if (nextScale <= 1.05f) Offset.Zero else offset + pan
                         updateScale(nextScale)
                     }
                 }

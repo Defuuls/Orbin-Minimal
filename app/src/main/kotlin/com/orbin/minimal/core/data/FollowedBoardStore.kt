@@ -2,6 +2,7 @@ package com.orbin.minimal.core.data
 
 import android.content.Context
 import com.orbin.minimal.core.model.BoardRef
+import com.orbin.minimal.core.security.BoardSlugs
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -15,8 +16,8 @@ class FollowedBoardStore(context: Context) {
             for (index in 0 until array.length()) {
                 val item = array.optJSONObject(index) ?: continue
                 val provider = item.optString("provider")
-                val board = item.optString("board")
-                if (provider.isNotBlank() && board.isNotBlank()) {
+                val board = BoardSlugs.sanitizeOrNull(item.optString("board")) ?: continue
+                if (provider.isNotBlank()) {
                     add(BoardRef(provider, board, item.optString("title", board)))
                 }
             }
@@ -27,13 +28,15 @@ class FollowedBoardStore(context: Context) {
         all().any { it.provider == board.provider && it.board == board.board }
 
     fun toggle(board: BoardRef): Boolean {
+        val safeBoard = BoardSlugs.sanitizeOrNull(board.board) ?: return false
+        val normalized = board.copy(board = safeBoard)
         val current = all().toMutableList()
-        val index = current.indexOfFirst { it.provider == board.provider && it.board == board.board }
+        val index = current.indexOfFirst { it.provider == normalized.provider && it.board == normalized.board }
         val followed = if (index >= 0) {
             current.removeAt(index)
             false
         } else {
-            current.add(board)
+            current.add(normalized)
             true
         }
         save(current)
@@ -43,10 +46,11 @@ class FollowedBoardStore(context: Context) {
     private fun save(boards: List<BoardRef>) {
         val array = JSONArray()
         boards.forEach { board ->
+            val safeBoard = BoardSlugs.sanitizeOrNull(board.board) ?: return@forEach
             array.put(
                 JSONObject()
                     .put("provider", board.provider)
-                    .put("board", board.board)
+                    .put("board", safeBoard)
                     .put("title", board.title),
             )
         }

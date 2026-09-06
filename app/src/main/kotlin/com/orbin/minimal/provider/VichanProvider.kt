@@ -8,7 +8,11 @@ import com.orbin.minimal.core.model.ThreadDetails
 import com.orbin.minimal.core.model.ThreadPost
 import com.orbin.minimal.core.network.HttpJsonClient
 import com.orbin.minimal.core.provider.ImageBoardProvider
+import com.orbin.minimal.core.security.BoardSlugs
+import com.orbin.minimal.core.security.MediaHosts
 import com.orbin.minimal.media.extractExternalLinks
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -19,47 +23,53 @@ class VichanProvider(
     private val apiBaseUrl: String = "https://a.4cdn.org",
     private val mediaBaseUrl: String = "https://i.4cdn.org",
 ) : ImageBoardProvider {
-    override suspend fun boards(): List<BoardRef> {
-        val array = JSONObject(client.get("$apiBaseUrl/boards.json")).optJSONArray("boards") ?: JSONArray()
-        return buildList {
-            for (index in 0 until array.length()) {
-                val item = array.optJSONObject(index) ?: continue
-                val board = item.optString("board")
-                if (board.isNotBlank()) add(BoardRef(id, board, item.optString("title", board)))
-            }
-        }
-    }
-
-    override suspend fun catalog(board: String): List<FeedThread> {
-        val pages = JSONArray(client.get("$apiBaseUrl/$board/catalog.json"))
-        return buildList {
-            for (pageIndex in 0 until pages.length()) {
-                val threads = pages.optJSONObject(pageIndex)?.optJSONArray("threads") ?: continue
-                for (threadIndex in 0 until threads.length()) {
-                    val post = threads.optJSONObject(threadIndex) ?: continue
-                    add(post.toFeedThread(board))
+    override suspend fun boards(): List<BoardRef> =
+        withContext(Dispatchers.Default) {
+            val array = JSONObject(client.get("$apiBaseUrl/boards.json")).optJSONArray("boards") ?: JSONArray()
+            buildList {
+                for (index in 0 until array.length()) {
+                    val item = array.optJSONObject(index) ?: continue
+                    val board = BoardSlugs.sanitizeOrNull(item.optString("board")) ?: continue
+                    add(BoardRef(id, board, item.optString("title", board)))
                 }
             }
         }
-    }
 
-    override suspend fun thread(board: String, threadId: Long): ThreadDetails {
-        val posts = JSONObject(client.get("$apiBaseUrl/$board/thread/$threadId.json"))
-            .optJSONArray("posts") ?: JSONArray()
-        val mapped = buildList {
-            for (index in 0 until posts.length()) {
-                posts.optJSONObject(index)?.let { add(it.toPost(board)) }
+    override suspend fun catalog(board: String): List<FeedThread> =
+        withContext(Dispatchers.Default) {
+            val safeBoard = BoardSlugs.sanitizeOrNull(board) ?: return@withContext emptyList()
+            val pages = JSONArray(client.get("$apiBaseUrl/$safeBoard/catalog.json"))
+            buildList {
+                for (pageIndex in 0 until pages.length()) {
+                    val threads = pages.optJSONObject(pageIndex)?.optJSONArray("threads") ?: continue
+                    for (threadIndex in 0 until threads.length()) {
+                        val post = threads.optJSONObject(threadIndex) ?: continue
+                        add(post.toFeedThread(safeBoard))
+                    }
+                }
             }
         }
-        val op = posts.optJSONObject(0)
-        return ThreadDetails(
-            provider = id,
-            board = board,
-            threadId = threadId,
-            title = op?.optString("sub")?.takeIf(String::isNotBlank) ?: "Thread $threadId",
-            posts = mapped,
-        )
-    }
+
+    override suspend fun thread(board: String, threadId: Long): ThreadDetails =
+        withContext(Dispatchers.Default) {
+            val safeBoard = BoardSlugs.sanitizeOrNull(board)
+                ?: error("Invalid board slug")
+            val posts = JSONObject(client.get("$apiBaseUrl/$safeBoard/thread/$threadId.json"))
+                .optJSONArray("posts") ?: JSONArray()
+            val mapped = buildList {
+                for (index in 0 until posts.length()) {
+                    posts.optJSONObject(index)?.let { add(it.toPost(safeBoard)) }
+                }
+            }
+            val op = posts.optJSONObject(0)
+            ThreadDetails(
+                provider = id,
+                board = safeBoard,
+                threadId = threadId,
+                title = op?.optString("sub")?.takeIf(String::isNotBlank) ?: "Thread $threadId",
+                posts = mapped,
+            )
+        }
 
     private fun JSONObject.toFeedThread(board: String): FeedThread {
         val threadId = optLong("no")
@@ -93,9 +103,11 @@ class VichanProvider(
         val tim = optString("tim")
         val ext = optString("ext")
         if (tim.isBlank() || ext.isBlank()) return null
+        val url = MediaHosts.filterUrl("$mediaBaseUrl/$board/$tim$ext") ?: return null
+        val thumb = MediaHosts.filterUrl("$mediaBaseUrl/$board/${tim}s.jpg")
         return MediaRef(
-            url = "$mediaBaseUrl/$board/$tim$ext",
-            thumbnailUrl = "$mediaBaseUrl/$board/${tim}s.jpg",
+            url = url,
+            thumbnailUrl = thumb,
         )
     }
 
