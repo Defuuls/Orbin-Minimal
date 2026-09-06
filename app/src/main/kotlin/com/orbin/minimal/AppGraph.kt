@@ -9,6 +9,7 @@ import com.orbin.minimal.core.network.HttpJsonClient
 import com.orbin.minimal.core.network.NetworkFactory
 import com.orbin.minimal.core.provider.ProviderRegistry
 import com.orbin.minimal.media.ImageLoading
+import com.orbin.minimal.media.ImagePreloader
 import com.orbin.minimal.provider.LynxChanProvider
 import com.orbin.minimal.provider.VichanProvider
 import okhttp3.OkHttpClient
@@ -18,6 +19,7 @@ class AppGraph(context: Context) {
     val okHttpClient: OkHttpClient = NetworkFactory.sharedOkHttp(appContext)
     private val http = HttpJsonClient(okHttpClient)
     val imageLoader: ImageLoader = ImageLoading.createImageLoader(appContext, okHttpClient)
+    val imagePreloader: ImagePreloader = ImagePreloader(appContext, imageLoader)
 
     private val providers = ProviderRegistry(
         listOf(

@@ -61,3 +61,12 @@ Prefer rewriting small integration layers over importing generic full-app abstra
 ## Build strategy
 
 Start with one `:app` module to keep the dependency graph small. Split packages into Gradle modules only when boundaries become stable enough to justify the build complexity.
+
+## Feed windowing
+
+The merged feed is flattened into keyed Lazy list/grid entries with `contentType`
+for reuse. Rendered rows (headers + threads) are soft-capped at
+`MAX_RENDERED_FEED_ENTRIES` (400) so huge multi-board catalogs do not keep
+unbounded Compose items alive (Compose Foundation 1.12 / BOM 2026.08 has no
+LazyColumn `beyondViewportItemCount`). Near-viewport Coil prefetch uses ViewModel scope.
+

@@ -8,6 +8,7 @@ import com.orbin.minimal.core.data.FeedSort
 import com.orbin.minimal.core.data.ProviderFailure
 import com.orbin.minimal.core.model.BoardRef
 import com.orbin.minimal.core.model.FeedThread
+import com.orbin.minimal.media.ImagePreloader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +27,7 @@ data class FeedUiState(
 
 class FeedViewModel(
     private val repository: FeedRepository,
+    private val imagePreloader: ImagePreloader?,
 ) : ViewModel() {
     private val _state = MutableStateFlow(FeedUiState(followed = repository.followed()))
     val state: StateFlow<FeedUiState> = _state.asStateFlow()
@@ -36,6 +38,13 @@ class FeedViewModel(
 
     fun setSort(sort: FeedSort) {
         _state.update { it.copy(sort = sort) }
+    }
+
+    /** Near-viewport thumbnail prefetch; cancelled with [viewModelScope] on leave. */
+    fun prefetchFeedThumbs(urls: List<String>) {
+        val preloader = imagePreloader ?: return
+        if (urls.isEmpty()) return
+        preloader.prefetchBatch(urls, viewModelScope, maxDimensionPx = FEED_PREFETCH_MAX_PX)
     }
 
     fun refresh() {
@@ -75,11 +84,16 @@ class FeedViewModel(
     }
 
     companion object {
-        fun factory(repository: FeedRepository): ViewModelProvider.Factory =
+        const val FEED_PREFETCH_MAX_PX = 480
+
+        fun factory(
+            repository: FeedRepository,
+            imagePreloader: ImagePreloader? = null,
+        ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
                 override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                    FeedViewModel(repository) as T
+                    FeedViewModel(repository, imagePreloader) as T
             }
     }
 }
