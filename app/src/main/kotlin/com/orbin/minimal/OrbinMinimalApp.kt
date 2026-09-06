@@ -2,6 +2,7 @@
 
 package com.orbin.minimal
 
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -10,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.orbin.minimal.core.security.BoardSlugs
 import com.orbin.minimal.feature.boards.BoardsScreen
 import com.orbin.minimal.feature.feed.FeedScreen
 import com.orbin.minimal.feature.thread.ThreadScreen
@@ -17,7 +19,10 @@ import com.orbin.minimal.feature.thread.ThreadScreen
 @Composable
 fun OrbinMinimalApp() {
     val context = LocalContext.current
-    val graph = remember(context.applicationContext) { AppGraph(context.applicationContext) }
+    val application = context.applicationContext as? OrbinMinimalApplication
+    val graph = remember(context.applicationContext) {
+        application?.graph ?: AppGraph(context.applicationContext)
+    }
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "feed") {
@@ -26,7 +31,8 @@ fun OrbinMinimalApp() {
                 repository = graph.feedRepository,
                 onBoards = { navController.navigate("boards") },
                 onThread = { item ->
-                    navController.navigate("thread/${item.provider}/${item.board}/${item.threadId}")
+                    val board = BoardSlugs.sanitizeOrNull(item.board) ?: return@FeedScreen
+                    navController.navigate("thread/${item.provider}/$board/${item.threadId}")
                 },
             )
         }
@@ -44,10 +50,16 @@ fun OrbinMinimalApp() {
                 navArgument("threadId") { type = NavType.LongType },
             ),
         ) { entry ->
+            val boardArg = entry.arguments?.getString("board").orEmpty()
+            val safeBoard = BoardSlugs.sanitizeOrNull(boardArg)
+            if (safeBoard == null) {
+                Text("Invalid board")
+                return@composable
+            }
             ThreadScreen(
                 repository = graph.threadRepository,
                 provider = entry.arguments?.getString("provider").orEmpty(),
-                board = entry.arguments?.getString("board").orEmpty(),
+                board = safeBoard,
                 threadId = entry.arguments?.getLong("threadId") ?: 0L,
                 onBack = { navController.popBackStack() },
             )

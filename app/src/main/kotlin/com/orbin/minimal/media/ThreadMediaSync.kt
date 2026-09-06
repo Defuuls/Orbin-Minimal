@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Environment
 import com.orbin.minimal.core.model.MediaRef
 import com.orbin.minimal.core.model.ThreadDetails
+import com.orbin.minimal.core.security.MediaHosts
 
 class ThreadMediaSync(private val context: Context) {
     private val downloadManager: DownloadManager
@@ -34,6 +35,7 @@ class ThreadMediaSync(private val context: Context) {
         threadTitle: String,
         fallbackIndex: Int = 1,
     ): Long {
+        if (!MediaHosts.isAllowedUrl(media.url)) return SKIPPED_ID
         val uri = Uri.parse(media.url)
         if (!uri.scheme.equals("https", ignoreCase = true)) return SKIPPED_ID
 
