@@ -67,6 +67,13 @@ Start with one `:app` module to keep the dependency graph small. Split packages 
 The merged feed is flattened into keyed Lazy list/grid entries with `contentType`
 for reuse. Rendered rows (headers + threads) are soft-capped at
 `MAX_RENDERED_FEED_ENTRIES` (400) so huge multi-board catalogs do not keep
-unbounded Compose items alive (Compose Foundation 1.12 / BOM 2026.08 has no
-LazyColumn `beyondViewportItemCount`). Near-viewport Coil prefetch uses ViewModel scope.
+unbounded Compose items alive.
+
+**`beyondBoundsItemCount` unsupported:** Compose Foundation 1.12 (BOM
+`2026.08.00`) does not expose a public `beyondBoundsItemCount` parameter on
+`LazyColumn` / `LazyVerticalGrid`. Internal beyond-bounds helpers exist for
+focus traversal (`LazyListBeyondBoundsState`), but they are not a scroll
+prefetch/window API we can set from app code. Windowing therefore remains this
+soft entry cap + `contentType` reuse + near-viewport Coil prefetch (ViewModel
+scope). Revisit if a future Foundation release adds the Lazy parameter.
 
