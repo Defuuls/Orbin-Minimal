@@ -73,9 +73,10 @@ private val CompactBreakpoint = 600.dp
 
 /**
  * Soft cap on rendered feed rows (headers + threads). Catalog merges can be huge; beyond this
- * count items are omitted from composition. Compose Foundation 1.12 (BOM 2026.08) has no
- * LazyColumn `beyondViewportItemCount`; windowing is this soft cap + contentType + Coil prefetch.
- * Raise only with care for scroll/memory cost.
+ * count items are omitted from composition. Compose Foundation 1.12 (BOM 2026.08) has no public
+ * LazyColumn/LazyVerticalGrid `beyondBoundsItemCount`; windowing is this soft cap + contentType
+ * + Coil prefetch. See docs/ARCHITECTURE.md § Feed windowing. Raise only with care for
+ * scroll/memory cost.
  */
 internal const val MAX_RENDERED_FEED_ENTRIES = 400
 
