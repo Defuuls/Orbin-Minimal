@@ -58,7 +58,7 @@ jobs:
       - name: Open a pull request with the profile
         id: profile_pr
         continue-on-error: true
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: bot/baseline-profile-generated
           add-paths: app/src/release/generated/**
