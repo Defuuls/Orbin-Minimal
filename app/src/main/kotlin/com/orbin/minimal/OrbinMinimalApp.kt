@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.orbin.minimal.core.model.FeedThread
 import com.orbin.minimal.core.security.BoardSlugs
 import com.orbin.minimal.feature.boards.BoardsScreen
 import com.orbin.minimal.feature.feed.FeedScreen
@@ -25,21 +26,39 @@ fun OrbinMinimalApp() {
     }
     val navController = rememberNavController()
 
+    val onBoards: () -> Unit = remember(navController) {
+        {
+            navController.navigate("boards")
+            Unit
+        }
+    }
+    val onThread: (FeedThread) -> Unit = remember(navController) {
+        { item ->
+            val board = BoardSlugs.sanitizeOrNull(item.board)
+            if (board != null) {
+                navController.navigate("thread/${item.provider}/$board/${item.threadId}")
+            }
+        }
+    }
+    val onBack: () -> Unit = remember(navController) {
+        {
+            navController.popBackStack()
+            Unit
+        }
+    }
+
     NavHost(navController = navController, startDestination = "feed") {
         composable("feed") {
             FeedScreen(
                 repository = graph.feedRepository,
-                onBoards = { navController.navigate("boards") },
-                onThread = { item ->
-                    val board = BoardSlugs.sanitizeOrNull(item.board) ?: return@FeedScreen
-                    navController.navigate("thread/${item.provider}/$board/${item.threadId}")
-                },
+                onBoards = onBoards,
+                onThread = onThread,
             )
         }
         composable("boards") {
             BoardsScreen(
                 repository = graph.feedRepository,
-                onBack = { navController.popBackStack() },
+                onBack = onBack,
             )
         }
         composable(
@@ -61,7 +80,7 @@ fun OrbinMinimalApp() {
                 provider = entry.arguments?.getString("provider").orEmpty(),
                 board = safeBoard,
                 threadId = entry.arguments?.getLong("threadId") ?: 0L,
-                onBack = { navController.popBackStack() },
+                onBack = onBack,
             )
         }
     }

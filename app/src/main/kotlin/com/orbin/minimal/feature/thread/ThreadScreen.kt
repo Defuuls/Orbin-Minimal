@@ -161,7 +161,7 @@ fun ThreadScreen(
                         items(
                             items = postsWithOffset,
                             key = { it.post.id },
-                            contentType = { "post" },
+                            contentType = { if (it.post.media.isNotEmpty()) "post-media" else "post" },
                         ) { entry ->
                             val post = entry.post
                             Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {

@@ -124,6 +124,7 @@ fun InternalMediaViewer(
                         modifier = Modifier.fillMaxSize(),
                         userScrollEnabled = !currentImageZoomed,
                         beyondViewportPageCount = 0,
+                        key = { media[it].url },
                     ) { page ->
                         val item = media[page]
                         val isActive = page == pagerState.settledPage
