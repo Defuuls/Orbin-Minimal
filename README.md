@@ -31,3 +31,13 @@ Pull-to-refresh / Refresh still hits the network when the max-age window has exp
 The clean rebuild starts as a single Android application module with package boundaries for `model`, `network`, `provider`, `data`, `media`, and UI features. Modules will only be split out when there is a measurable maintenance or build benefit.
 
 See `docs/ARCHITECTURE.md` for the dependency rules, feed windowing notes, and migration policy. For Pixel 10 Pro XL manual verification, see `docs/PIXEL_XL_TEST_PLAN.md`.
+
+## Build tooling
+
+| Tool | How |
+| --- | --- |
+| Dependency analysis | `gradle buildHealth` (CI uploads the report; non-blocking) |
+| CodeQL | Automatic on PRs / `main` / weekly |
+| Baseline profile | Actions → **Baseline profile**, or `gradle :app:generateReleaseBaselineProfile` on a rooted emulator |
+
+Kotlin is pinned at **2.4.10** for CodeQL compatibility; Dependabot ignores `>=2.4.20` until the extractor catches up.

@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Orbin-Minimal"
 include(":app")
+include(":benchmark")

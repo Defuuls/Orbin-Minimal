@@ -77,3 +77,8 @@ prefetch/window API we can set from app code. Windowing therefore remains this
 soft entry cap + `contentType` reuse + near-viewport Coil prefetch (ViewModel
 scope). Revisit if a future Foundation release adds the Lazy parameter.
 
+## Build health and profiles
+
+- **Dependency analysis** — `gradle buildHealth` (advice-only in CI; report artifact `build-health-report`).
+- **CodeQL** — `.github/workflows/codeql.yml` on PRs/pushes to `main` plus a weekly schedule. Kotlin stays on **2.4.10** until CodeQL documents 2.4.20+ support.
+- **Baseline profiles** — `:benchmark` records startup/feed paths. Generate via the **Baseline profile** workflow (`workflow_dispatch` or monthly) or `gradle :app:generateReleaseBaselineProfile` on a rooted emulator. Commit `app/src/release/generated/baselineProfiles/`.

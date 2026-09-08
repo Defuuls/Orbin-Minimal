@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -16,18 +20,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.7.1'
+      - name: Set up JDK and Gradle
+        uses: ./.github/actions/setup-jdk-gradle
       - name: Lint debug build
         run: gradle :app:lintDebug --stacktrace
       - name: Run unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
+      # R8 release builds belong to release.yml / auto-release; keep a main-only smoke here.
       - name: Build release APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: gradle :app:assembleRelease --stacktrace
+      # Advice-only: first clean tree usually has unused-dep noise; do not block merge.
+      - name: Dependency analysis (buildHealth)
+        continue-on-error: true
+        run: gradle buildHealth --stacktrace
+
+      - name: Upload buildHealth report
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-health-report
+          path: |
+            build/reports/dependency-analysis/**
+            **/build/reports/dependency-analysis/**
+          if-no-files-found: ignore

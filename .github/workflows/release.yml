@@ -104,18 +104,9 @@ jobs:
             git push origin "$RELEASE_TAG"
           fi
 
-      - name: Set up JDK 17
+      - name: Set up JDK and Gradle
         if: ${{ !inputs.notes_only }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Gradle 9.7.1
-        if: ${{ !inputs.notes_only }}
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.7.1'
+        uses: ./.github/actions/setup-jdk-gradle
 
       - name: Decode signing keystore
         if: ${{ !inputs.notes_only }}

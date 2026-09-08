@@ -408,10 +408,10 @@ private fun FeedRow(
             val excerpt = item.excerpt.take(140)
             Text(if (showBoard) "/${item.board}/\n$excerpt" else excerpt)
         },
-        leadingContent = thumb?.let { request ->
-            {
+        leadingContent = {
+            if (thumb != null) {
                 AsyncImage(
-                    model = request,
+                    model = thumb,
                     contentDescription = null,
                     modifier = Modifier.size(ImageLoading.ListThumbDp),
                     contentScale = ContentScale.Crop,
