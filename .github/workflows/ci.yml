@@ -40,7 +40,7 @@ jobs:
       - name: Upload buildHealth report
         if: always()
         continue-on-error: true
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-health-report
           path: |
