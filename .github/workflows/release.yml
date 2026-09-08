@@ -2,7 +2,7 @@ name: Release Orbin Minimal
 
 # Standalone Orbin Minimal release workflow.
 # Release tags and APK assets are named from the fixed codename sequence in
-# .github/release-codenames.txt (terminal conditions from version 17 on).
+# .github/release-codenames.txt (terminal conditions from version 18 on).
 # Example: v5-judd -> orbin-minimal-judd.apk
 on:
   push:
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag to create, e.g. v17-asystole'
+        description: 'Release tag to create, e.g. v18-asystole'
         required: true
         type: string
       base_ref:
@@ -27,7 +27,7 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: 'Release tag to create, e.g. v17-asystole'
+        description: 'Release tag to create, e.g. v18-asystole'
         required: true
         type: string
       base_ref:
