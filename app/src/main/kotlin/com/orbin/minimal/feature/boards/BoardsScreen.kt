@@ -65,7 +65,7 @@ fun BoardsScreen(
                 loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 error != null -> Text(error.orEmpty(), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
                 else -> LazyColumn {
-                    items(boards, key = { "${it.provider}:${it.board}" }) { board ->
+                    items(boards, key = { "${it.provider}:${it.board}" }, contentType = { "board" }) { board ->
                         val key = "${board.provider}:${board.board}"
                         ListItem(
                             headlineContent = { Text("/${board.board}/ — ${board.title}") },
