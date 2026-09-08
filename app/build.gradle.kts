@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("androidx.baselineprofile")
 }
 
 val minimalVersionCode = providers.gradleProperty("orbin.minimalVersionCode").get().toInt()
@@ -76,6 +77,10 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.0")
     implementation("androidx.media3:media3-exoplayer:1.11.0")
     implementation("androidx.media3:media3-ui:1.11.0")
+
+    // Applies the baseline profile on devices without Play's profile delivery.
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+    baselineProfile(project(":benchmark"))
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20250517")

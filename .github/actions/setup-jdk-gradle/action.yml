@@ -10,6 +10,10 @@ inputs:
     description: Gradle distribution version for the action (Minimal pins the wrapper-equivalent).
     required: false
     default: '9.7.1'
+  cache-disabled:
+    description: Disable the Gradle action cache (use for CodeQL clean builds).
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -24,3 +28,4 @@ runs:
       uses: gradle/actions/setup-gradle@v4
       with:
         gradle-version: ${{ inputs.gradle-version }}
+        cache-disabled: ${{ inputs.cache-disabled }}
