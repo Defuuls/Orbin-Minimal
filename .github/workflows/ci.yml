@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -24,5 +28,11 @@ jobs:
         run: gradle :app:testDebugUnitTest --stacktrace
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
+      # R8 release builds belong to release.yml / auto-release; keep a main-only smoke here.
       - name: Build release APK
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: gradle :app:assembleRelease --stacktrace
+      # Advice-only: first clean tree usually has unused-dep noise; do not block merge.
+      - name: Dependency analysis (buildHealth)
+        continue-on-error: true
+        run: gradle buildHealth --stacktrace
