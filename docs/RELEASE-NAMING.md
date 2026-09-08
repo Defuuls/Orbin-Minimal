@@ -4,56 +4,57 @@ Android keeps a monotonically increasing numeric `versionCode`; the human-facing
 
 ## Current series: terminal conditions
 
-From version **17** onward, releases are named after **terminal conditions in health** (clinical end-of-life / peri-arrest states) and tagged `v<number>-<codename>`.
+From version **18** onward, releases are named after **terminal conditions in health** (clinical end-of-life / peri-arrest states) and tagged `v<number>-<codename>`.
 
 | Version | Codename | Named for | Release tag | APK asset |
 | ---: | --- | --- | --- | --- |
-| 17 | Asystole | Asystole (no cardiac electrical activity) | `v17-asystole` | `orbin-minimal-asystole.apk` |
-| 18 | Apnea | Apnea (cessation of breathing) | `v18-apnea` | `orbin-minimal-apnea.apk` |
-| 19 | PEA | Pulseless electrical activity | `v19-pea` | `orbin-minimal-pea.apk` |
-| 20 | VFib | Ventricular fibrillation | `v20-vfib` | `orbin-minimal-vfib.apk` |
-| 21 | Arrest | Cardiac arrest | `v21-arrest` | `orbin-minimal-arrest.apk` |
-| 22 | BrainDeath | Brain death | `v22-braindeath` | `orbin-minimal-braindeath.apk` |
-| 23 | Coma | Coma | `v23-coma` | `orbin-minimal-coma.apk` |
-| 24 | Agonal | Agonal respiration | `v24-agonal` | `orbin-minimal-agonal.apk` |
-| 25 | Anuria | Anuria | `v25-anuria` | `orbin-minimal-anuria.apk` |
-| 26 | Cachexia | Cachexia | `v26-cachexia` | `orbin-minimal-cachexia.apk` |
-| 27 | Mottling | Terminal mottling | `v27-mottling` | `orbin-minimal-mottling.apk` |
-| 28 | Shock | Refractory shock | `v28-shock` | `orbin-minimal-shock.apk` |
-| 29 | MODS | Multiple organ dysfunction syndrome | `v29-mods` | `orbin-minimal-mods.apk` |
-| 30 | ARDS | Acute respiratory distress syndrome | `v30-ards` | `orbin-minimal-ards.apk` |
-| 31 | DIC | Disseminated intravascular coagulation | `v31-dic` | `orbin-minimal-dic.apk` |
-| 32 | Sepsis | Septic shock | `v32-sepsis` | `orbin-minimal-sepsis.apk` |
-| 33 | Uremia | Uremia | `v33-uremia` | `orbin-minimal-uremia.apk` |
-| 34 | Hepatic | Acute hepatic failure | `v34-hepatic` | `orbin-minimal-hepatic.apk` |
-| 35 | Ischemia | Critical ischemia | `v35-ischemia` | `orbin-minimal-ischemia.apk` |
-| 36 | Necrosis | Tissue necrosis | `v36-necrosis` | `orbin-minimal-necrosis.apk` |
-| 37 | Gangrene | Gangrene | `v37-gangrene` | `orbin-minimal-gangrene.apk` |
-| 38 | Infarction | Infarction (terminal course) | `v38-infarction` | `orbin-minimal-infarction.apk` |
-| 39 | Aspiration | Terminal aspiration | `v39-aspiration` | `orbin-minimal-aspiration.apk` |
-| 40 | Anoxia | Anoxia | `v40-anoxia` | `orbin-minimal-anoxia.apk` |
-| 41 | Exsanguination | Exsanguination | `v41-exsanguination` | `orbin-minimal-exsanguination.apk` |
-| 42 | Tamponade | Cardiac tamponade | `v42-tamponade` | `orbin-minimal-tamponade.apk` |
-| 43 | Herniation | Brain herniation | `v43-herniation` | `orbin-minimal-herniation.apk` |
-| 44 | Vegetative | Persistent vegetative state | `v44-vegetative` | `orbin-minimal-vegetative.apk` |
-| 45 | Acidosis | Refractory metabolic acidosis | `v45-acidosis` | `orbin-minimal-acidosis.apk` |
-| 46 | Hypoxia | Refractory hypoxia | `v46-hypoxia` | `orbin-minimal-hypoxia.apk` |
-| 47 | Asphyxia | Asphyxia | `v47-asphyxia` | `orbin-minimal-asphyxia.apk` |
-| 48 | Pulseless | Pulseless state | `v48-pulseless` | `orbin-minimal-pulseless.apk` |
-| 49 | Bradypnea | Terminal bradypnea | `v49-bradypnea` | `orbin-minimal-bradypnea.apk` |
-| 50 | Oliguria | Terminal oliguria | `v50-oliguria` | `orbin-minimal-oliguria.apk` |
-| 51 | Delirium | Terminal delirium | `v51-delirium` | `orbin-minimal-delirium.apk` |
-| 52 | Obtundation | Obtundation | `v52-obtundation` | `orbin-minimal-obtundation.apk` |
-| 53 | Stupor | Stupor | `v53-stupor` | `orbin-minimal-stupor.apk` |
-| 54 | Unresponsive | Unresponsiveness | `v54-unresponsive` | `orbin-minimal-unresponsive.apk` |
-| 55 | Circulatory | Circulatory collapse | `v55-circulatory` | `orbin-minimal-circulatory.apk` |
-| 56 | Respiratory | Respiratory failure | `v56-respiratory` | `orbin-minimal-respiratory.apk` |
-| 57 | Renal | End-stage renal failure | `v57-renal` | `orbin-minimal-renal.apk` |
-| 58 | Multisystem | Multisystem failure | `v58-multisystem` | `orbin-minimal-multisystem.apk` |
+| 18 | Asystole | Asystole (no cardiac electrical activity) | `v18-asystole` | `orbin-minimal-asystole.apk` |
+| 19 | Apnea | Apnea (cessation of breathing) | `v19-apnea` | `orbin-minimal-apnea.apk` |
+| 20 | PEA | Pulseless electrical activity | `v20-pea` | `orbin-minimal-pea.apk` |
+| 21 | VFib | Ventricular fibrillation | `v21-vfib` | `orbin-minimal-vfib.apk` |
+| 22 | Arrest | Cardiac arrest | `v22-arrest` | `orbin-minimal-arrest.apk` |
+| 23 | BrainDeath | Brain death | `v23-braindeath` | `orbin-minimal-braindeath.apk` |
+| 24 | Coma | Coma | `v24-coma` | `orbin-minimal-coma.apk` |
+| 25 | Agonal | Agonal respiration | `v25-agonal` | `orbin-minimal-agonal.apk` |
+| 26 | Anuria | Anuria | `v26-anuria` | `orbin-minimal-anuria.apk` |
+| 27 | Cachexia | Cachexia | `v27-cachexia` | `orbin-minimal-cachexia.apk` |
+| 28 | Mottling | Terminal mottling | `v28-mottling` | `orbin-minimal-mottling.apk` |
+| 29 | Shock | Refractory shock | `v29-shock` | `orbin-minimal-shock.apk` |
+| 30 | MODS | Multiple organ dysfunction syndrome | `v30-mods` | `orbin-minimal-mods.apk` |
+| 31 | ARDS | Acute respiratory distress syndrome | `v31-ards` | `orbin-minimal-ards.apk` |
+| 32 | DIC | Disseminated intravascular coagulation | `v32-dic` | `orbin-minimal-dic.apk` |
+| 33 | Sepsis | Septic shock | `v33-sepsis` | `orbin-minimal-sepsis.apk` |
+| 34 | Uremia | Uremia | `v34-uremia` | `orbin-minimal-uremia.apk` |
+| 35 | Hepatic | Acute hepatic failure | `v35-hepatic` | `orbin-minimal-hepatic.apk` |
+| 36 | Ischemia | Critical ischemia | `v36-ischemia` | `orbin-minimal-ischemia.apk` |
+| 37 | Necrosis | Tissue necrosis | `v37-necrosis` | `orbin-minimal-necrosis.apk` |
+| 38 | Gangrene | Gangrene | `v38-gangrene` | `orbin-minimal-gangrene.apk` |
+| 39 | Infarction | Infarction (terminal course) | `v39-infarction` | `orbin-minimal-infarction.apk` |
+| 40 | Aspiration | Terminal aspiration | `v40-aspiration` | `orbin-minimal-aspiration.apk` |
+| 41 | Anoxia | Anoxia | `v41-anoxia` | `orbin-minimal-anoxia.apk` |
+| 42 | Exsanguination | Exsanguination | `v42-exsanguination` | `orbin-minimal-exsanguination.apk` |
+| 43 | Tamponade | Cardiac tamponade | `v43-tamponade` | `orbin-minimal-tamponade.apk` |
+| 44 | Herniation | Brain herniation | `v44-herniation` | `orbin-minimal-herniation.apk` |
+| 45 | Vegetative | Persistent vegetative state | `v45-vegetative` | `orbin-minimal-vegetative.apk` |
+| 46 | Acidosis | Refractory metabolic acidosis | `v46-acidosis` | `orbin-minimal-acidosis.apk` |
+| 47 | Hypoxia | Refractory hypoxia | `v47-hypoxia` | `orbin-minimal-hypoxia.apk` |
+| 48 | Asphyxia | Asphyxia | `v48-asphyxia` | `orbin-minimal-asphyxia.apk` |
+| 49 | Pulseless | Pulseless state | `v49-pulseless` | `orbin-minimal-pulseless.apk` |
+| 50 | Bradypnea | Terminal bradypnea | `v50-bradypnea` | `orbin-minimal-bradypnea.apk` |
+| 51 | Oliguria | Terminal oliguria | `v51-oliguria` | `orbin-minimal-oliguria.apk` |
+| 52 | Delirium | Terminal delirium | `v52-delirium` | `orbin-minimal-delirium.apk` |
+| 53 | Obtundation | Obtundation | `v53-obtundation` | `orbin-minimal-obtundation.apk` |
+| 54 | Stupor | Stupor | `v54-stupor` | `orbin-minimal-stupor.apk` |
+| 55 | Unresponsive | Unresponsiveness | `v55-unresponsive` | `orbin-minimal-unresponsive.apk` |
+| 56 | Circulatory | Circulatory collapse | `v56-circulatory` | `orbin-minimal-circulatory.apk` |
+| 57 | Respiratory | Respiratory failure | `v57-respiratory` | `orbin-minimal-respiratory.apk` |
+| 58 | Renal | End-stage renal failure | `v58-renal` | `orbin-minimal-renal.apk` |
+| 59 | Multisystem | Multisystem failure | `v59-multisystem` | `orbin-minimal-multisystem.apk` |
+
 
 ## Retired series: famous minimalists
 
-Versions 5–16 shipped under a famous-minimalists series and keep their published `v<number>-<codename>` tags. They hold their positions in the codename file because position determines `versionCode` — those entries must never be removed or reordered.
+Versions 5–17 shipped under a famous-minimalists series and keep their published `v<number>-<codename>` tags. They hold their positions in the codename file because position determines `versionCode` — those entries must never be removed or reordered.
 
 | Version | Codename | Named for | Release tag |
 | ---: | --- | --- | --- |
@@ -69,6 +70,7 @@ Versions 5–16 shipped under a famous-minimalists series and keep their publish
 | 14 | Kelly | Ellsworth Kelly | `v14-kelly` |
 | 15 | Glass | Philip Glass | `v15-glass` |
 | 16 | Reich | Steve Reich | `v16-reich` |
+| 17 | Riley | Terry Riley | `v17-riley` |
 
 ## Retired series: body organs
 

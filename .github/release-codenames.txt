@@ -11,8 +11,8 @@
 #   Named for  the subject, credited in the release notes
 #
 # Versions 1-4: retired body-organ series (organ-v<n>-<slug>).
-# Versions 5-16: retired famous-minimalists series (v<n>-<slug>).
-# From version 17: terminal conditions in health / clinical end-of-life states.
+# Versions 5-17: retired famous-minimalists series (v<n>-<slug>).
+# From version 18: terminal conditions in health / clinical end-of-life states.
 
 heart|Heart|Heart (retired organ series)
 brain|Brain|Brain (retired organ series)
@@ -30,6 +30,7 @@ serra|Serra|Richard Serra (retired minimalist series)
 kelly|Kelly|Ellsworth Kelly (retired minimalist series)
 glass|Glass|Philip Glass (retired minimalist series)
 reich|Reich|Steve Reich (retired minimalist series)
+riley|Riley|Terry Riley (retired minimalist series)
 asystole|Asystole|Asystole (no cardiac electrical activity)
 apnea|Apnea|Apnea (cessation of breathing)
 pea|PEA|Pulseless electrical activity
