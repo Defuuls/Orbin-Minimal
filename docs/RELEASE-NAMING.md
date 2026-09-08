@@ -2,32 +2,73 @@
 
 Android keeps a monotonically increasing numeric `versionCode`; the human-facing `versionName`, Git tag, GitHub release title, APK filename, mapping filename, and checksum filenames use the codename assigned to that version.
 
-## Current series: minimalists
+## Current series: terminal conditions
 
-From version 5 onward, releases are named after famous minimalists and tagged `v<number>-<codename>`.
+From version **17** onward, releases are named after **terminal conditions in health** (clinical end-of-life / peri-arrest states) and tagged `v<number>-<codename>`.
 
 | Version | Codename | Named for | Release tag | APK asset |
 | ---: | --- | --- | --- | --- |
-| 5 | Judd | Donald Judd | `v5-judd` | `orbin-minimal-judd.apk` |
-| 6 | Martin | Agnes Martin | `v6-martin` | `orbin-minimal-martin.apk` |
-| 7 | Flavin | Dan Flavin | `v7-flavin` | `orbin-minimal-flavin.apk` |
-| 8 | LeWitt | Sol LeWitt | `v8-lewitt` | `orbin-minimal-lewitt.apk` |
-| 9 | Andre | Carl Andre | `v9-andre` | `orbin-minimal-andre.apk` |
-| 10 | Stella | Frank Stella | `v10-stella` | `orbin-minimal-stella.apk` |
-| 11 | Morris | Robert Morris | `v11-morris` | `orbin-minimal-morris.apk` |
-| 12 | Truitt | Anne Truitt | `v12-truitt` | `orbin-minimal-truitt.apk` |
-| 13 | Serra | Richard Serra | `v13-serra` | `orbin-minimal-serra.apk` |
-| 14 | Kelly | Ellsworth Kelly | `v14-kelly` | `orbin-minimal-kelly.apk` |
-| 15 | Glass | Philip Glass | `v15-glass` | `orbin-minimal-glass.apk` |
-| 16 | Reich | Steve Reich | `v16-reich` | `orbin-minimal-reich.apk` |
-| 17 | Riley | Terry Riley | `v17-riley` | `orbin-minimal-riley.apk` |
-| 18 | Young | La Monte Young | `v18-young` | `orbin-minimal-young.apk` |
-| 19 | Part | Arvo Pärt | `v19-part` | `orbin-minimal-part.apk` |
-| 20 | Rams | Dieter Rams | `v20-rams` | `orbin-minimal-rams.apk` |
-| 21 | Pawson | John Pawson | `v21-pawson` | `orbin-minimal-pawson.apk` |
-| 22 | Ando | Tadao Ando | `v22-ando` | `orbin-minimal-ando.apk` |
-| 23 | Mies | Ludwig Mies van der Rohe | `v23-mies` | `orbin-minimal-mies.apk` |
-| 24 | Ryman | Robert Ryman | `v24-ryman` | `orbin-minimal-ryman.apk` |
+| 17 | Asystole | Asystole (no cardiac electrical activity) | `v17-asystole` | `orbin-minimal-asystole.apk` |
+| 18 | Apnea | Apnea (cessation of breathing) | `v18-apnea` | `orbin-minimal-apnea.apk` |
+| 19 | PEA | Pulseless electrical activity | `v19-pea` | `orbin-minimal-pea.apk` |
+| 20 | VFib | Ventricular fibrillation | `v20-vfib` | `orbin-minimal-vfib.apk` |
+| 21 | Arrest | Cardiac arrest | `v21-arrest` | `orbin-minimal-arrest.apk` |
+| 22 | BrainDeath | Brain death | `v22-braindeath` | `orbin-minimal-braindeath.apk` |
+| 23 | Coma | Coma | `v23-coma` | `orbin-minimal-coma.apk` |
+| 24 | Agonal | Agonal respiration | `v24-agonal` | `orbin-minimal-agonal.apk` |
+| 25 | Anuria | Anuria | `v25-anuria` | `orbin-minimal-anuria.apk` |
+| 26 | Cachexia | Cachexia | `v26-cachexia` | `orbin-minimal-cachexia.apk` |
+| 27 | Mottling | Terminal mottling | `v27-mottling` | `orbin-minimal-mottling.apk` |
+| 28 | Shock | Refractory shock | `v28-shock` | `orbin-minimal-shock.apk` |
+| 29 | MODS | Multiple organ dysfunction syndrome | `v29-mods` | `orbin-minimal-mods.apk` |
+| 30 | ARDS | Acute respiratory distress syndrome | `v30-ards` | `orbin-minimal-ards.apk` |
+| 31 | DIC | Disseminated intravascular coagulation | `v31-dic` | `orbin-minimal-dic.apk` |
+| 32 | Sepsis | Septic shock | `v32-sepsis` | `orbin-minimal-sepsis.apk` |
+| 33 | Uremia | Uremia | `v33-uremia` | `orbin-minimal-uremia.apk` |
+| 34 | Hepatic | Acute hepatic failure | `v34-hepatic` | `orbin-minimal-hepatic.apk` |
+| 35 | Ischemia | Critical ischemia | `v35-ischemia` | `orbin-minimal-ischemia.apk` |
+| 36 | Necrosis | Tissue necrosis | `v36-necrosis` | `orbin-minimal-necrosis.apk` |
+| 37 | Gangrene | Gangrene | `v37-gangrene` | `orbin-minimal-gangrene.apk` |
+| 38 | Infarction | Infarction (terminal course) | `v38-infarction` | `orbin-minimal-infarction.apk` |
+| 39 | Aspiration | Terminal aspiration | `v39-aspiration` | `orbin-minimal-aspiration.apk` |
+| 40 | Anoxia | Anoxia | `v40-anoxia` | `orbin-minimal-anoxia.apk` |
+| 41 | Exsanguination | Exsanguination | `v41-exsanguination` | `orbin-minimal-exsanguination.apk` |
+| 42 | Tamponade | Cardiac tamponade | `v42-tamponade` | `orbin-minimal-tamponade.apk` |
+| 43 | Herniation | Brain herniation | `v43-herniation` | `orbin-minimal-herniation.apk` |
+| 44 | Vegetative | Persistent vegetative state | `v44-vegetative` | `orbin-minimal-vegetative.apk` |
+| 45 | Acidosis | Refractory metabolic acidosis | `v45-acidosis` | `orbin-minimal-acidosis.apk` |
+| 46 | Hypoxia | Refractory hypoxia | `v46-hypoxia` | `orbin-minimal-hypoxia.apk` |
+| 47 | Asphyxia | Asphyxia | `v47-asphyxia` | `orbin-minimal-asphyxia.apk` |
+| 48 | Pulseless | Pulseless state | `v48-pulseless` | `orbin-minimal-pulseless.apk` |
+| 49 | Bradypnea | Terminal bradypnea | `v49-bradypnea` | `orbin-minimal-bradypnea.apk` |
+| 50 | Oliguria | Terminal oliguria | `v50-oliguria` | `orbin-minimal-oliguria.apk` |
+| 51 | Delirium | Terminal delirium | `v51-delirium` | `orbin-minimal-delirium.apk` |
+| 52 | Obtundation | Obtundation | `v52-obtundation` | `orbin-minimal-obtundation.apk` |
+| 53 | Stupor | Stupor | `v53-stupor` | `orbin-minimal-stupor.apk` |
+| 54 | Unresponsive | Unresponsiveness | `v54-unresponsive` | `orbin-minimal-unresponsive.apk` |
+| 55 | Circulatory | Circulatory collapse | `v55-circulatory` | `orbin-minimal-circulatory.apk` |
+| 56 | Respiratory | Respiratory failure | `v56-respiratory` | `orbin-minimal-respiratory.apk` |
+| 57 | Renal | End-stage renal failure | `v57-renal` | `orbin-minimal-renal.apk` |
+| 58 | Multisystem | Multisystem failure | `v58-multisystem` | `orbin-minimal-multisystem.apk` |
+
+## Retired series: famous minimalists
+
+Versions 5–16 shipped under a famous-minimalists series and keep their published `v<number>-<codename>` tags. They hold their positions in the codename file because position determines `versionCode` — those entries must never be removed or reordered.
+
+| Version | Codename | Named for | Release tag |
+| ---: | --- | --- | --- |
+| 5 | Judd | Donald Judd | `v5-judd` |
+| 6 | Martin | Agnes Martin | `v6-martin` |
+| 7 | Flavin | Dan Flavin | `v7-flavin` |
+| 8 | LeWitt | Sol LeWitt | `v8-lewitt` |
+| 9 | Andre | Carl Andre | `v9-andre` |
+| 10 | Stella | Frank Stella | `v10-stella` |
+| 11 | Morris | Robert Morris | `v11-morris` |
+| 12 | Truitt | Anne Truitt | `v12-truitt` |
+| 13 | Serra | Richard Serra | `v13-serra` |
+| 14 | Kelly | Ellsworth Kelly | `v14-kelly` |
+| 15 | Glass | Philip Glass | `v15-glass` |
+| 16 | Reich | Steve Reich | `v16-reich` |
 
 ## Retired series: body organs
 
@@ -46,7 +87,7 @@ The machine-readable source of truth is [`.github/release-codenames.txt`](../.gi
 
 A version counts as released only when a **published GitHub Release** exists for its tag. A tag on its own is not enough: the release workflow pushes the tag before it builds, so a cancelled or failed run leaves an orphaned tag behind. Those orphans are ignored, so a version number is never consumed by a release that never shipped, and re-running after a failure picks up the same version again.
 
-Append only. Never reorder or remove a line that has already shipped: the tag and asset names of published releases depend on its position. Extend the table above and the file together before version 25.
+Append only. Never reorder or remove a line that has already shipped: the tag and asset names of published releases depend on its position. Extend the table above and the file together before the list runs out.
 
 ## Automatic releases
 
