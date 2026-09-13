@@ -228,6 +228,7 @@ private fun VideoPage(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var muted by remember(media.url) { mutableStateOf(true) }
+    var loopEnabled by remember(media.url) { mutableStateOf(false) }
     var expanded by remember(media.url) { mutableStateOf(false) }
     var buffering by remember(media.url) { mutableStateOf(true) }
     var playbackError by remember(media.url) { mutableStateOf<PlaybackException?>(null) }
@@ -236,10 +237,15 @@ private fun VideoPage(
         ExoPlayer.Builder(context).build().apply {
             setMediaItem(MediaItem.fromUri(media.url))
             if (initialPositionMs > 0L) seekTo(initialPositionMs)
+            repeatMode = repeatModeFor(loopEnabled)
             volume = 0f
             playWhenReady = true
             prepare()
         }
+    }
+
+    LaunchedEffect(loopEnabled) {
+        player.repeatMode = repeatModeFor(loopEnabled)
     }
 
     DisposableEffect(player, lifecycleOwner) {
@@ -348,16 +354,12 @@ private fun VideoPage(
                 Text(if (muted) "Unmute" else "Mute", color = ViewerContentColor)
             }
 
-            Text(
-                text = if (playbackError != null) {
-                    "Playback error"
-                } else if (muted) {
-                    "Playing muted"
-                } else {
-                    "Sound on"
-                },
-                color = if (playbackError != null) ViewerMutedColor else ViewerContentColor,
-            )
+            TextButton(onClick = { loopEnabled = !loopEnabled }) {
+                Text(
+                    if (loopEnabled) "Loop" else "Once",
+                    color = if (loopEnabled) ViewerContentColor else ViewerMutedColor,
+                )
+            }
 
             TextButton(onClick = { expanded = !expanded }) {
                 Text(if (expanded) "Fit" else "Expand", color = ViewerContentColor)
@@ -494,6 +496,9 @@ private fun ImagePage(
         }
     }
 }
+
+internal fun repeatModeFor(loopEnabled: Boolean): Int =
+    if (loopEnabled) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
 
 private fun MediaRef.isVideo(): Boolean {
     if (mimeType?.startsWith("video/", ignoreCase = true) == true) return true
