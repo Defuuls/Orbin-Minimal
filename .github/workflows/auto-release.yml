@@ -21,13 +21,6 @@ on:
       - '.github/workflows/auto-release.yml'
       - '.github/release-codenames.txt'
       - '.github/scripts/release-meta.sh'
-  workflow_dispatch:
-    inputs:
-      force:
-        description: 'Release even if the head commit says [skip release]'
-        required: false
-        default: false
-        type: boolean
 
 concurrency:
   group: auto-release
@@ -44,14 +37,13 @@ jobs:
       should_release: ${{ steps.plan.outputs.should_release }}
       tag: ${{ steps.plan.outputs.tag }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
       - name: Plan next release
         id: plan
         env:
-          FORCE: ${{ inputs.force || 'false' }}
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
@@ -60,7 +52,7 @@ jobs:
           echo "should_release=false" >> "$GITHUB_OUTPUT"
 
           SUBJECT=$(git log -1 --pretty=%B)
-          if [ "$FORCE" != "true" ] && grep -qiF '[skip release]' <<<"$SUBJECT"; then
+          if grep -qiF '[skip release]' <<<"$SUBJECT"; then
             echo "Head commit opts out of releasing."
             exit 0
           fi
@@ -107,7 +99,7 @@ jobs:
     if: needs.decide.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Set up JDK and Gradle
         uses: ./.github/actions/setup-jdk-gradle
       - name: Run unit tests
@@ -124,4 +116,3 @@ jobs:
     secrets: inherit
     with:
       tag: ${{ needs.decide.outputs.tag }}
-      base_ref: ${{ github.sha }}

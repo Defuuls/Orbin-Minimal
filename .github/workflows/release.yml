@@ -1,45 +1,17 @@
 name: Release Orbin Minimal
 
-# Standalone Orbin Minimal release workflow.
+# Reusable Orbin Minimal release workflow.
 # Release tags and APK assets are named from the fixed codename sequence in
 # .github/release-codenames.txt (terminal conditions from version 18 on).
-# Example: v5-judd -> orbin-minimal-judd.apk
+# This workflow is intentionally callable only from the verified main-push
+# auto-release pipeline; direct manual/tag release entry points are disabled.
 on:
-  push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Release tag to create, e.g. v18-asystole'
-        required: true
-        type: string
-      base_ref:
-        description: 'Branch or SHA to tag (defaults to main)'
-        required: false
-        default: main
-        type: string
-      notes_only:
-        description: 'Regenerate notes for an existing release without building or uploading'
-        required: false
-        default: false
-        type: boolean
   workflow_call:
     inputs:
       tag:
         description: 'Release tag to create, e.g. v18-asystole'
         required: true
         type: string
-      base_ref:
-        description: 'Branch or SHA to tag (defaults to main)'
-        required: false
-        default: main
-        type: string
-      notes_only:
-        description: 'Regenerate notes for an existing release without building or uploading'
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: write
@@ -47,15 +19,16 @@ permissions:
 jobs:
   release:
     name: Build, sign & publish Orbin Minimal
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     env:
-      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      RELEASE_TAG: ${{ inputs.tag }}
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-          ref: ${{ inputs.base_ref || github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Validate release codename
         shell: bash
@@ -91,7 +64,6 @@ jobs:
           echo "MAPPING_NAME=orbin-minimal-${SLUG}-mapping.txt" >> "$GITHUB_ENV"
 
       - name: Create and push annotated tag
-        if: ${{ inputs.tag != '' && !inputs.notes_only }}
         shell: bash
         run: |
           set -euo pipefail
@@ -104,12 +76,14 @@ jobs:
             git push origin "$RELEASE_TAG"
           fi
 
+      - name: Drop checkout credentials before build
+        shell: bash
+        run: git config --local --unset-all http.https://github.com/.extraheader || true
+
       - name: Set up JDK and Gradle
-        if: ${{ !inputs.notes_only }}
         uses: ./.github/actions/setup-jdk-gradle
 
       - name: Decode signing keystore
-        if: ${{ !inputs.notes_only }}
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         shell: bash
@@ -123,7 +97,6 @@ jobs:
           echo "ORBIN_KEYSTORE_FILE=$RUNNER_TEMP/orbin-minimal-release.jks" >> "$GITHUB_ENV"
 
       - name: Build signed release APK
-        if: ${{ !inputs.notes_only }}
         env:
           ORBIN_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           ORBIN_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
@@ -137,7 +110,6 @@ jobs:
             --stacktrace
 
       - name: Locate artifacts and compute checksums
-        if: ${{ !inputs.notes_only }}
         shell: bash
         run: |
           set -euo pipefail
@@ -162,8 +134,7 @@ jobs:
           fi
 
       - name: Upload mapping as a private build artifact
-        if: ${{ !inputs.notes_only }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ${{ env.MAPPING_NAME }}
           path: mapping-private/
@@ -206,23 +177,8 @@ jobs:
             echo '```'
           } > release-notes.md
 
-      - name: Update notes of existing release
-        if: ${{ inputs.notes_only }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! RELEASE=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}" 2>/dev/null); then
-            echo "::error::No published release found for '$RELEASE_TAG'"
-            exit 1
-          fi
-          ID=$(echo "$RELEASE" | jq -r '.id')
-          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${ID}" -F body=@release-notes.md >/dev/null
-
       - name: Publish GitHub Release
-        if: ${{ !inputs.notes_only }}
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           name: ${{ steps.notes.outputs.release_name }}

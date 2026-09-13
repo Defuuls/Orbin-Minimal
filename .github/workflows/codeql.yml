@@ -21,7 +21,7 @@ jobs:
     name: Analyze (java-kotlin)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up JDK and Gradle
         uses: ./.github/actions/setup-jdk-gradle
@@ -29,19 +29,33 @@ jobs:
           cache-disabled: true
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           languages: java-kotlin
           build-mode: manual
 
-      # Wrapper is gitignored; CI installs Gradle via the setup action.
-      # Keep Kotlin at 2.4.10 — CodeQL's extractor supports through 2.4.10 only
-      # (CodeQL 2.26.2+). Bumping past that hard-fails this job.
+      # CodeQL bundle 2.27.0 still rejects Kotlin 2.4.20 even though the public support matrix
+      # already lists it. Keep the repository on the CVE-fixed compiler and downgrade only this
+      # disposable, cache-disabled analysis workspace until the shipped extractor catches up.
+      - name: Use CodeQL-compatible Kotlin compiler
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("build.gradle.kts")
+          text = path.read_text()
+          fixed = 'id("org.jetbrains.kotlin.plugin.compose") version "2.4.20" apply false'
+          compatible = 'id("org.jetbrains.kotlin.plugin.compose") version "2.4.10" apply false'
+          if fixed not in text:
+              raise SystemExit("Expected Kotlin 2.4.20 plugin declaration was not found")
+          path.write_text(text.replace(fixed, compatible, 1))
+          PY
+
       - name: Build Android project
         run: gradle clean :app:assembleDebug --no-daemon --no-build-cache -Dorg.gradle.caching=false --stacktrace
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           category: /language:java-kotlin
 
@@ -49,14 +63,14 @@ jobs:
     name: Analyze (actions)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           languages: actions
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4
         with:
           category: /language:actions
