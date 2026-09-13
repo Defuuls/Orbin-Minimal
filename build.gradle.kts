@@ -6,5 +6,5 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose") version "2.4.20" apply false
     // Root-only unused/misdeclared dependency advice: `gradle buildHealth`
     id("com.autonomousapps.dependency-analysis") version "3.19.1"
-    id("androidx.baselineprofile") version "1.5.0-rc02" apply false
+    id("androidx.baselineprofile") version "1.5.0" apply false
 }
