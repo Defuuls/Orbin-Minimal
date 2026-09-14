@@ -86,22 +86,16 @@ internal sealed interface FeedListEntry {
 }
 
 internal fun buildFeedEntries(
-    sort: FeedSort,
-    ordered: List<FeedThread>,
     groups: List<Pair<String, List<FeedThread>>>,
     selectedSiteId: String,
     maxItems: Int = MAX_RENDERED_FEED_ENTRIES,
 ): List<FeedListEntry> {
-    val raw: List<FeedListEntry> =
-        if (sort == FeedSort.BOARD) {
-            buildList {
-                for ((label, threads) in groups) {
-                    add(FeedListEntry.Header(label, selectedSiteId))
-                    threads.forEach { add(FeedListEntry.Row(it, showBoard = false)) }
-                }
+    val raw =
+        buildList {
+            for ((label, threads) in groups) {
+                add(FeedListEntry.Header(label, selectedSiteId))
+                threads.forEach { add(FeedListEntry.Row(it, showBoard = false)) }
             }
-        } else {
-            ordered.map { FeedListEntry.Row(it, showBoard = true) }
         }
     return if (raw.size <= maxItems) raw else raw.take(maxItems)
 }
@@ -151,15 +145,11 @@ fun FeedScreen(
         state.warnings.filter { it.provider == selectedSite.providerId }
     }
     val ordered = remember(selectedFeed, sort) { selectedFeed.sortedFor(sort) }
-    val groups = remember(ordered, sort) {
-        if (sort == FeedSort.BOARD) {
-            ordered.groupBy { "/${it.board}/" }.toList()
-        } else {
-            emptyList()
-        }
+    val groups = remember(ordered) {
+        ordered.groupBy { "/${it.board}/" }.toList()
     }
-    val entries = remember(sort, ordered, groups, selectedSite) {
-        buildFeedEntries(sort, ordered, groups, selectedSite.providerId)
+    val entries = remember(groups, selectedSite) {
+        buildFeedEntries(groups, selectedSite.providerId)
     }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Orbin Minimal") }) }) { padding ->
