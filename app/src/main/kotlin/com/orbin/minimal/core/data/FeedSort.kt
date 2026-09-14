@@ -10,7 +10,7 @@ enum class FeedSort(val label: String) {
      */
     BOARD("Board"),
 
-    /** One flat list, most recently active thread first, across all boards. */
+    /** Group by board, most recently active thread first within each board. */
     ACTIVITY("Latest activity"),
     ;
 
@@ -26,14 +26,13 @@ private val byBoardThenNewest =
         // feed that reshuffles on refresh is worse than an arbitrary order.
         .thenByDescending(FeedThread::threadId)
 
-private val byActivity =
-    compareByDescending<FeedThread>(FeedThread::lastActivityEpochMillis)
-        .thenBy(FeedThread::provider)
-        .thenBy(FeedThread::board)
+private val byBoardThenActivity =
+    compareBy<FeedThread>({ it.provider }, { it.board })
+        .thenByDescending(FeedThread::lastActivityEpochMillis)
         .thenByDescending(FeedThread::threadId)
 
 fun List<FeedThread>.sortedFor(sort: FeedSort): List<FeedThread> =
     when (sort) {
         FeedSort.BOARD -> sortedWith(byBoardThenNewest)
-        FeedSort.ACTIVITY -> sortedWith(byActivity)
+        FeedSort.ACTIVITY -> sortedWith(byBoardThenActivity)
     }
