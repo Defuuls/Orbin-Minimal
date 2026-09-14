@@ -81,7 +81,7 @@ class FeedSortTest {
     }
 
     @Test
-    fun `activity sort is a flat list ordered by last activity`() {
+    fun `activity sort keeps boards together and orders each by last activity`() {
         val feed = listOf(
             thread(board = "a", id = 1, created = 100, activity = 100),
             thread(board = "b", id = 2, created = 50, activity = 300),
@@ -89,7 +89,7 @@ class FeedSortTest {
         )
 
         assertEquals(
-            listOf(2L, 3L, 1L),
+            listOf(3L, 1L, 2L),
             feed.sortedFor(FeedSort.ACTIVITY).map(FeedThread::threadId),
         )
     }
