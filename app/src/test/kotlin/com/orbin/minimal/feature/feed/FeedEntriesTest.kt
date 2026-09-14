@@ -1,8 +1,8 @@
 package com.orbin.minimal.feature.feed
 
-import com.orbin.minimal.core.data.FeedSort
 import com.orbin.minimal.core.model.FeedThread
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -18,27 +18,44 @@ class FeedEntriesTest {
         )
 
     @Test
-    fun `activity sort is a flat list of rows`() {
-        val ordered = listOf(thread("a", 1), thread("b", 2))
-        val entries = buildFeedEntries(FeedSort.ACTIVITY, ordered, emptyList(), "fourchan")
-        assertEquals(2, entries.size)
-        assertTrue(entries.all { it is FeedListEntry.Row })
+    fun `every board group starts with a header`() {
+        val groups =
+            listOf(
+                "/a/" to listOf(thread("a", 2), thread("a", 1)),
+                "/b/" to listOf(thread("b", 3)),
+            )
+
+        val entries = buildFeedEntries(groups, "fourchan")
+
+        assertEquals(5, entries.size)
+        assertEquals(
+            listOf("header:/a/", "row:2", "row:1", "header:/b/", "row:3"),
+            entries.map { entry ->
+                when (entry) {
+                    is FeedListEntry.Header -> "header:${entry.label}"
+                    is FeedListEntry.Row -> "row:${entry.thread.threadId}"
+                }
+            },
+        )
+        assertTrue(entries.filterIsInstance<FeedListEntry.Header>().all { it.site == "fourchan" })
+        assertFalse(entries.filterIsInstance<FeedListEntry.Row>().any(FeedListEntry.Row::showBoard))
     }
 
     @Test
-    fun `board sort inserts headers then soft-caps total entries`() {
-        val groups = listOf(
-            "/a/" to List(10) { thread("a", it.toLong()) },
-            "/b/" to List(10) { thread("b", 100L + it) },
-        )
-        val ordered = groups.flatMap { it.second }
-        val capped = buildFeedEntries(
-            sort = FeedSort.BOARD,
-            ordered = ordered,
-            groups = groups,
-            selectedSiteId = "fourchan",
-            maxItems = 5,
-        )
+    fun `board groups and headers count toward the soft cap`() {
+        val groups =
+            listOf(
+                "/a/" to List(10) { thread("a", it.toLong()) },
+                "/b/" to List(10) { thread("b", 100L + it) },
+            )
+
+        val capped =
+            buildFeedEntries(
+                groups = groups,
+                selectedSiteId = "fourchan",
+                maxItems = 5,
+            )
+
         assertEquals(5, capped.size)
         assertTrue(capped.first() is FeedListEntry.Header)
     }
